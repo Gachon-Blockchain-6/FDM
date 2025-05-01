@@ -1,0 +1,59 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    transition: margin-left 0.3s;
+}
+
+/* 탭 버튼 스타일 */
+#tabButton {
+    position: fixed;
+    top: 20px; /* 기존 10px에서 증가 */
+    left: 20px; /* 기존 10px에서 증가 */
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* 탭 컨테이너 스타일 */
+#tabContainer {
+    position: fixed;
+    top: 20px; /* 탭 버튼과 같은 기준 */
+    left: -250px;
+    width: 250px;
+    height: calc(100% - 40px); /* 탭 버튼 아래 공간 확보 */
+    background-color: #f8f9fa;
+    transition: left 0.3s;
+    z-index: 999;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    padding-top: 20px; /* 상단 여백 추가 */
+}
+
+#tabContainer.open {
+    left: 0;
+}
+
+#tabs {
+    padding: 20px;
+}
+
+#tabs a {
+    display: block;
+    margin: 10px 0;
+    text-decoration: none;
+    color: black;
+}
+
+/* 사용자 정보 영역 여백 추가 */
+#content {
+    margin-left: 270px; /* 탭 컨테이너와 겹치지 않도록 */
+    padding: 20px;
+}

@@ -1,0 +1,17 @@
+# Node.js 기반 이미지를 사용
+FROM node:current-slim
+
+# 작업 디렉토리 설정
+WORKDIR /usr/src/app
+
+# 모든 파일을 컨테이너로 복사
+COPY . .
+
+# 필요한 패키지 설치 (package.json과 package-lock.json이 포함된 경우)
+RUN npm install
+
+# 컨테이너에서 사용할 포트
+EXPOSE 3000
+
+# 애플리케이션 시작 명령어
+CMD ["node", "main.js"]

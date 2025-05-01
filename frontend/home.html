@@ -1,0 +1,43 @@
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>홈 페이지</title>
+        <link rel="stylesheet" href="/styles/tab.css">
+    </head>
+    <body>
+        <!-- 탭 메뉴 -->
+        <div id="tabContainer">
+            <button id="tabButton">☰</button>
+            <div id="tabs">
+                <a href="/home.html">Home</a>
+                <br>
+                <a href="/uploadTest.html">이미지 업로드 하러 가기</a>
+                <br>
+                <a href="/test.html">데이터셋 라벨링 하러 가기</a>
+                <br>
+                <a href="/boardView.html">게시판 보기</a>
+                <br>
+                <a href="/test.html">데이터셋 상점 보기</a>
+                <br><br>
+                <button id="authButton">로그인</button>
+            </div>
+        </div>
+
+        <!-- 중앙 컨텐츠 -->
+        <div id="content">
+            <div id="user-info">
+                <h3>사용자 정보</h3>
+                <p id="user-name">이름: 로딩 중...</p>
+                <p id="user-points">포인트: 로딩 중...</p>
+                <p id="user-grade">등급: 로딩 중...</p>
+                <p id="user-class">클래스: 로딩 중...</p>
+                <br>
+            </div>
+        </div>
+
+        <script src="scripts/tab.js"></script>
+        <script src="scripts/home.js"></script>
+    </body>
+    </html>
