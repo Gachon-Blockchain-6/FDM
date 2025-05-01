@@ -91,7 +91,7 @@ services:
       - ./truffle:/app
     # 개발용 포트(필요시)
     ports:
-      - "9545:9545"  # truffle develop 네트워크 포트
+      - "9545:9545"  
     tty: true
     
 networks:
