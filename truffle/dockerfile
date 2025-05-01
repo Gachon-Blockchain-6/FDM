@@ -1,0 +1,14 @@
+FROM node:18
+
+# Truffle, Ganache 설치
+RUN npm install -g truffle@5.9.0 ganache-cli@6.12.2
+
+# 프로젝트 복사
+WORKDIR /app
+COPY . /app
+
+# 필요시 의존성 설치
+RUN npm install
+
+# 기본 명령어: truffle v
+CMD ["truffle", "develop"]

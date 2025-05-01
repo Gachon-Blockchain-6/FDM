@@ -1,0 +1,99 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-container
+    networks:
+      - app-network
+    ports:
+      - "8012:3000"
+    environment:
+      DB_HOST: mysql-container
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_DATABASE: dockerProject
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-container
+    networks:
+      - app-network
+    ports:
+      - "8011:80"
+    restart: always
+
+  database:
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+    container_name: mysql-container
+    networks:
+      - app-network
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dockerProject
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_general_ci
+      TZ: Asia/Seoul
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --init-connect='SET NAMES utf8mb4'
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx-container
+    networks:
+      - app-network
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    restart: always
+
+  minio:
+    image: minio/minio
+    container_name: image-container
+    networks:
+      - app-network
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./miniO:/data
+    restart: always
+
+  truffle:
+    build:
+      context: ./truffle
+      dockerfile: Dockerfile
+    container_name: truffle-container
+    networks:
+      - app-network
+    volumes:
+      - ./truffle:/app
+    # 개발용 포트(필요시)
+    ports:
+      - "9545:9545"  # truffle develop 네트워크 포트
+    tty: true
+    
+networks:
+  app-network:
+    driver: bridge
