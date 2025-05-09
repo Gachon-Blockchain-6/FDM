@@ -1,0 +1,26 @@
+name: Discord PR Notification
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send PR info to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d '{
+                 "username": "FDM GitHub 봇",
+                 "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                 "embeds": [{
+                   "title": "새로운 Pull Request가 생성되었습니다 🎉",
+                   "description": "**제목**: '${{ github.event.pull_request.title }}'\n**작성자**: `${{ github.actor }}`\n**링크**: [PR 바로가기](${{ github.event.pull_request.html_url }})",
+                   "color": 5814783
+                 }]
+               }' \
+               $DISCORD_WEBHOOK
