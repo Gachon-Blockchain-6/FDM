@@ -15,7 +15,15 @@ jobs:
           if [ "${{ github.event.action }}" = "opened" ]; then
             TITLE="🚀 Pull Request Opened!"
             COLOR=5814783
-            DESCRIPTION="**Title**: ${{ github.event.pull_request.title }}\n**Author**: ${{ github.actor }}\n\n**Description**:\n${{ github.event.pull_request.body }}\n\n🔗 [Go to PR](${{ github.event.pull_request.html_url }})"
+            PR_BODY=$(echo "${{ github.event.pull_request.body }}" | sed ':a;N;$!ba;s/\n/\\n/g')
+
+            DESCRIPTION=$(jq -n \
+              --arg pr_title "${{ github.event.pull_request.title }}" \
+              --arg author "${{ github.actor }}" \
+              --arg body "$PR_BODY" \
+              --arg url "${{ github.event.pull_request.html_url }}" \
+              '"**Title**: \($pr_title)\n**Author**: \($author)\n\n**Description**:\n\($body)\n\n🔗 [Go to PR](\($url))"' \
+              | sed 's/\\n/\n/g')
           elif [ "${{ github.event.action }}" = "closed" ]; then
             TITLE="🔒 Pull Request Closed!"
             COLOR=13632027
