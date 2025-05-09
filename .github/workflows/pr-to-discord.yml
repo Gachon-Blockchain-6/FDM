@@ -23,5 +23,5 @@ jobs:
   }]
 }
 EOF
-)
+          )
           curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$DISCORD_WEBHOOK"
