@@ -2,7 +2,7 @@ name: Discord PR Notification
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, closed]
 
 jobs:
   notify-discord:
@@ -12,16 +12,31 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "{
-                 \"username\": \"FDM GitHub 봇\",
-                 \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
-                 \"embeds\": [{
-                   \"title\": \"새로운 Pull Request가 생성되었습니다! \",
-                   \"description\": \"**제목**: ${{ github.event.pull_request.title }}\\n**작성자**: ${{ github.actor }}\\n**링크**: [PR 바로가기](${{ github.event.pull_request.html_url }})\",
-                   \"color\": 5814783
-                 }]
-               }" \
-               $DISCORD_WEBHOOK
+          if [ "${{ github.event.action }}" = "opened" ]; then
+            TITLE="🚀 새로운 Pull Request가 생성되었습니다!"
+            COLOR=5814783
+          elif [ "${{ github.event.action }}" = "closed" ]; then
+            TITLE="🔒 Pull Request가 닫혔습니다."
+            COLOR=13632027
+          fi
 
+          PAYLOAD=$(jq -n \
+            --arg title "$TITLE" \
+            --arg pr_title "${{ github.event.pull_request.title }}" \
+            --arg author "${{ github.actor }}" \
+            --arg body "${{ github.event.pull_request.body }}" \
+            --arg url "${{ github.event.pull_request.html_url }}" \
+            --argjson color "$COLOR" \
+            '{
+              username: "GitHub Bot",
+              avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+              embeds: [
+                {
+                  title: $title,
+                  description: "**제목**: \($pr_title)\n**작성자**: \($author)\n\n**내용**:\n\($body)\n\n🔗 [PR 바로가기](\($url))",
+                  color: $color
+                }
+              ]
+            }')
+
+          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$DISCORD_WEBHOOK"
