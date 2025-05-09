@@ -15,15 +15,16 @@ jobs:
           if [ "${{ github.event.action }}" = "opened" ]; then
             TITLE="🚀 Pull Request Opened!"
             COLOR=5814783
-            PR_BODY=$(echo "${{ github.event.pull_request.body }}" | sed ':a;N;$!ba;s/\n/\\n/g')
+            
+            # PR 본문의 Windows 줄바꿈(\r\n)을 Unix(\n)으로 바꿔줌
+            PR_BODY=$(echo "${{ github.event.pull_request.body }}" | sed 's/\r//g')
 
-            DESCRIPTION=$(jq -n \
-              --arg pr_title "${{ github.event.pull_request.title }}" \
-              --arg author "${{ github.actor }}" \
-              --arg body "$PR_BODY" \
-              --arg url "${{ github.event.pull_request.html_url }}" \
-              '"**Title**: \($pr_title)\n**Author**: \($author)\n\n**Description**:\n\($body)\n\n🔗 [Go to PR](\($url))"' \
-              | sed 's/\\n/\n/g')
+            DESCRIPTION=$(printf "**Title**: %s\n**Author**: %s\n\n**Description**:\n%s\n\n🔗 [Go to PR](%s)" \
+              "${{ github.event.pull_request.title }}" \
+              "${{ github.actor }}" \
+              "$PR_BODY" \
+              "${{ github.event.pull_request.html_url }}")
+
           elif [ "${{ github.event.action }}" = "closed" ]; then
             TITLE="🔒 Pull Request Closed!"
             COLOR=13632027
@@ -46,4 +47,7 @@ jobs:
               ]
             }')
 
-          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$DISCORD_WEBHOOK"
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "$PAYLOAD" \
+               "$DISCORD_WEBHOOK"
