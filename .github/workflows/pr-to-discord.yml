@@ -15,17 +15,16 @@ jobs:
           if [ "${{ github.event.action }}" = "opened" ]; then
             TITLE="🚀 새로운 Pull Request가 생성되었습니다!"
             COLOR=5814783
+            DESCRIPTION="**제목**: ${{ github.event.pull_request.title }}\n**작성자**: ${{ github.actor }}\n\n**내용**:\n${{ github.event.pull_request.body }}\n\n🔗 [PR 바로가기](${{ github.event.pull_request.html_url }})"
           elif [ "${{ github.event.action }}" = "closed" ]; then
             TITLE="🔒 Pull Request가 닫혔습니다."
             COLOR=13632027
+            DESCRIPTION="**제목**: ${{ github.event.pull_request.title }}"
           fi
 
           PAYLOAD=$(jq -n \
             --arg title "$TITLE" \
-            --arg pr_title "${{ github.event.pull_request.title }}" \
-            --arg author "${{ github.actor }}" \
-            --arg body "${{ github.event.pull_request.body }}" \
-            --arg url "${{ github.event.pull_request.html_url }}" \
+            --arg description "$DESCRIPTION" \
             --argjson color "$COLOR" \
             '{
               username: "GitHub Bot",
@@ -33,7 +32,7 @@ jobs:
               embeds: [
                 {
                   title: $title,
-                  description: "**제목**: \($pr_title)\n**작성자**: \($author)\n\n**내용**:\n\($body)\n\n🔗 [PR 바로가기](\($url))",
+                  description: $description,
                   color: $color
                 }
               ]
