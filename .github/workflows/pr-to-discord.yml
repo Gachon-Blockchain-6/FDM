@@ -2,7 +2,7 @@ name: Discord PR Notification
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, edited]
 
 jobs:
   notify-discord:
@@ -12,15 +12,16 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "{
-                 \"username\": \"GitHub Bot\",
-                 \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
-                 \"embeds\": [{
-                   \"title\": \"새로운 Pull Request가 생성되었습니다! \",
-                   \"description\": \"**제목**: ${{ github.event.pull_request.title }}\\n**작성자**: ${{ github.actor }}\\n\\n**내용**:\\n${{ github.event.pull_request.body }}\\n\\n🔗 [PR 바로가기](${{ github.event.pull_request.html_url }})\",
-                   \"color\": 5814783
-                 }]
-               }" \
-               $DISCORD_WEBHOOK
+          PAYLOAD=$(cat <<EOF
+          {
+            "username": "GitHub Bot",
+            "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            "embeds": [{
+              "title": "새로운 Pull Request가 생성되었습니다!",
+              "description": "**제목**: ${{ github.event.pull_request.title }}\n**작성자**: ${{ github.actor }}\n\n**내용**:\n${{ github.event.pull_request.body }}\n\n🔗 [PR 바로가기](${{ github.event.pull_request.html_url }})",
+              "color": 5814783
+            }]
+          }
+EOF
+          )
+          echo "$PAYLOAD" | curl -X POST -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK"
