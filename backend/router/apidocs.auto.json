@@ -3,7 +3,7 @@
   "info": {
     "title": "FDM Express API with Swagger",
     "version": "0.1.0",
-    "description": "Express로 만들어진 간단한 CRUD API 애플리케이션이며 Swagger로 문서화되었습니다."
+    "description": "Fine Data Mine Swagger API"
   },
   "servers": [
     {
