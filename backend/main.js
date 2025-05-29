@@ -2,6 +2,8 @@ const express = require('express');
 const session = require('express-session');
 const MysqlStore = require('express-mysql-session')(session);
 const bodyparser = require('body-parser');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./router/apidocs.auto.json');
 
 const authRouter = require('./router/authRouter');
 const rootRouter = require('./router/rootRouter');
@@ -27,6 +29,10 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     store: sessionStore,
+    cookie: {
+        sameSite: 'Lax',
+        secure: false
+    }
 }));
 
 app.use(bodyparser.urlencoded({ extended: true }));
@@ -40,6 +46,9 @@ app.use('/api', rootRouter);
 app.use('/api/auth', authRouter); 
 app.use('/api/board', boardRouter);
 app.use('/api/image', uploadRouter);  
+
+// Swagger UI 설정
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/favicon.ico', (req, res) => res.writeHead(404));
 
