@@ -118,6 +118,7 @@
     "statuses": "^2.0.1",
     "string_decoder": "^1.1.1",
     "supports-color": "^7.2.0",
+    "swagger-ui-express": "^5.0.1",
     "toidentifier": "^1.0.1",
     "type-is": "^1.6.18",
     "uid-safe": "^2.1.5",
