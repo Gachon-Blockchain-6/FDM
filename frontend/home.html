@@ -1,43 +1,33 @@
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>홈 페이지</title>
-        <link rel="stylesheet" href="/styles/tab.css">
-    </head>
-    <body>
-        <!-- 탭 메뉴 -->
-        <div id="tabContainer">
-            <button id="tabButton">☰</button>
-            <div id="tabs">
-                <a href="/home.html">Home</a>
-                <br>
-                <a href="/uploadTest.html">이미지 업로드 하러 가기</a>
-                <br>
-                <a href="/test.html">데이터셋 라벨링 하러 가기</a>
-                <br>
-                <a href="/boardView.html">게시판 보기</a>
-                <br>
-                <a href="/test.html">데이터셋 상점 보기</a>
-                <br><br>
-                <button id="authButton">로그인</button>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>홈 페이지</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
 
-        <!-- 중앙 컨텐츠 -->
-        <div id="content">
-            <div id="user-info">
-                <h3>사용자 정보</h3>
-                <p id="user-name">이름: 로딩 중...</p>
-                <p id="user-points">포인트: 로딩 중...</p>
-                <p id="user-grade">등급: 로딩 중...</p>
-                <p id="user-class">클래스: 로딩 중...</p>
-                <br>
-            </div>
-        </div>
+  <!-- 상단 헤더 -->
+<div id="header-container"></div>
 
-        <script src="scripts/tab.js"></script>
-        <script src="scripts/home.js"></script>
-    </body>
-    </html>
+  <!-- (비워둔) 메인 배너 자리 -->
+  <section class="main-banner">
+  <div class="banner-content">
+    <!-- 왼쪽: 로고 이미지 -->
+    <div class="banner-logo">
+      <img src="assets/logo-removebg-preview.png" alt="FDM 로고">
+    </div>
+
+    <!-- 오른쪽: 텍스트 -->
+    <div class="banner-text">
+      <h2>스마트한 데이터 수집의 시작</h2>
+      <p>FDM은 누구나 쉽고 빠르게 데이터를 라벨링하고, 수익을 얻을 수 있는 플랫폼입니다.</p>
+    </div>
+  </div>
+  </section>
+
+
+  <script src="scripts/injectHeader.js"></script>
+</body>
+</html>

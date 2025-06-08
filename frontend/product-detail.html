@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품 상세</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+  <div id="header-container"></div>
+
+  <main class="product-detail-container">
+    <h2 id="product-name">상품 이름 </h2>
+    <img id="product-image" src="assets/sample-dog.jpg" alt="상품 이미지" class="product-image">
+    <p id="product-desc">설명: </p>
+    <p id="product-price">가격: </p>
+
+    <button class="purchase-button" onclick="purchase()">구매하기</button>
+    <br><br>
+    <a href="shop.html">← 돌아가기</a>
+  </main>
+
+  <script src="scripts/injectHeader.js"></script>
+  <script src="scripts/product-detail.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<header class="header">
+  <a href="home.html" class="home-text-link" id="home-link" style="display:none;">HOME</a>
+
+  <nav class="nav-menu">
+    <a href="createDataset.html" id="create-dataset-link" style="display:none;">데이터셋 생성(관리자용)</a>
+    <a href="labeling.html">라벨링 작업</a>
+    <a href="shop.html">데이터 상점</a>
+    <a href="uploadTest.html">이미지 업로드</a>
+    <a href="boardView.html">게시판</a>
+  </nav>
+
+  <!-- 로그인 상태: 프로필 아이콘 + 드롭다운 -->
+  <div class="profile-icon" id="profile-area" style="display: none;">
+    <div class="profile-circle">
+      <img src="assets/user-icon.png" alt="사용자 프로필 아이콘">
+    </div>
+    <div class="profile-dropdown">
+      <p id="user-name">이름: 로딩 중...</p>
+      <p id="user-points">포인트: 로딩 중...</p>
+      <p id="user-grade">등급: 로딩 중...</p>
+      <p id="user-class">클래스: 로딩 중...</p>
+      <a href="#"><button onclick="logout()">로그아웃</button></a>
+    </div>
+  </div>
+
+  <!-- 비로그인 상태: 로그인 버튼 -->
+  <div id="login-button" style="display: none;">
+    <a href="login.html">
+      <button>로그인</button>
+    </a>
+  </div>
+</header>

@@ -60,3 +60,45 @@ CREATE TABLE comment (
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 작성 날짜
     FOREIGN KEY (board_id) REFERENCES board(board_id) ON DELETE CASCADE -- 게시글 삭제 시 댓글도 삭제
 );
+
+
+-- 4. 데이터셋(dataset)
+CREATE TABLE dataset (
+    datasetid    INT AUTO_INCREMENT PRIMARY KEY,
+    name         VARCHAR(100)  NOT NULL,            -- 데이터셋 이름
+    price        DECIMAL(12,2) NOT NULL,            -- 가격
+    sale_yn      CHAR(1)       NOT NULL DEFAULT 'N',-- 판매 여부(Y/N)
+    content      VARCHAR(255),                      -- 설명(선택)
+    onchain_yn   ENUM('Y','N') NOT NULL DEFAULT 'N', -- 온체인 업로드 여부
+    onchain_hash VARCHAR(66)      DEFAULT NULL        -- 트랜잭션 해시(0x…)
+);
+
+-- 5. 라벨(label)
+CREATE TABLE label (
+    label_id   INT AUTO_INCREMENT PRIMARY KEY,
+    datasetid  INT         NOT NULL,
+    cid        INT         NOT NULL,                -- 라벨러
+    imagePath  VARCHAR(255) NOT NULL,               -- S3·MinIO 경로
+    grade      VARCHAR(1)  NOT NULL,                -- 제출 당시 신뢰도
+    label      VARCHAR(100) NOT NULL,               -- 라벨 값
+    correct    ENUM('Y','N') DEFAULT 'N',           -- 정답/보상 플래그
+    FOREIGN KEY (datasetid) REFERENCES dataset(datasetid) ON DELETE CASCADE,
+    FOREIGN KEY (cid)       REFERENCES person(cid),
+    -- 동일 이미지에 같은 사용자가 여러 번 제출 못 하도록
+    CONSTRAINT uq_label_unique UNIQUE (datasetid, imagePath, cid)
+);
+
+-- 6. 구매 이력(purchase)
+CREATE TABLE purchase (
+    purchase_id INT AUTO_INCREMENT PRIMARY KEY,
+    datasetid   INT          NOT NULL,
+    loginid     VARCHAR(10)  NOT NULL,              -- 구매자
+    purchased_at TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    price       DECIMAL(12,2) NOT NULL,             -- 결제 금액
+    point       INT          DEFAULT 0,             -- 사용 포인트
+    payYN       CHAR(1)      DEFAULT 'N',
+    cancel      CHAR(1)      DEFAULT 'N',
+    refund      CHAR(1)      DEFAULT 'N',
+    FOREIGN KEY (datasetid) REFERENCES dataset(datasetid) ON DELETE CASCADE,
+    FOREIGN KEY (loginid)  REFERENCES person(loginid)
+);

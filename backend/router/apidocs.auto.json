@@ -1,0 +1,518 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FDM Express API with Swagger",
+    "version": "0.1.0",
+    "description": "Fine Data Mine Swagger API"
+  },
+  "servers": [
+    {
+      "url": "http://localhost/api"
+    }
+  ],
+  "paths": {
+    "/auth/login_process": {
+      "post": {
+        "summary": "User login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "loginid": {
+                    "type": "string",
+                    "description": "사용자 로그인 ID"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "사용자 비밀번호"
+                  }
+                },
+                "required": ["loginid", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "로그인 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "로그인 성공!" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "잘못된 자격 증명",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "아이디 또는 비밀번호가 잘못되었습니다." }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "로그인 중 문제가 발생했습니다." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout_process": {
+      "get": {
+        "summary": "User logout",
+        "responses": {
+          "302": {
+            "description": "로그아웃 성공, 홈으로 리디렉션"
+          }
+        }
+      }
+    },
+    "/auth/register_process": {
+      "post": {
+        "summary": "User registration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "loginid": { "type": "string" },
+                  "password": { "type": "string" },
+                  "name": { "type": "string" },
+                  "address": { "type": "string" },
+                  "tel": { "type": "string" },
+                  "birth": { "type": "string", "format": "date" }
+                },
+                "required": ["loginid", "password", "name", "birth"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "회원가입 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "회원가입 성공!" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청, 필수 필드 누락",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "필수 정보를 입력해주세요." }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "회원가입 중 문제가 발생했습니다." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/proxy_login": {
+      "post": {
+        "summary": "Anonymous proxy login",
+        "responses": {
+          "200": {
+            "description": "익명 로그인 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "익명 로그인 성공" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/board/view": {
+      "get": {
+        "summary": "View board posts with pagination",
+        "parameters": [
+          {
+            "name": "pNum",
+            "in": "query",
+            "description": "페이지 번호",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "게시글 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "boards": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "board_id": { "type": "integer" },
+                          "title": { "type": "string" },
+                          "date": { "type": "string", "format": "date-time" },
+                          "name": { "type": "string", "description": "작성자 이름" }
+                        }
+                      }
+                    },
+                    "totalPages": { "type": "integer" },
+                    "pNum": { "type": "integer" },
+                    "cls": { "type": "string", "description": "사용자 등급" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "내부 서버 오류"
+          }
+        }
+      }
+    },
+    "/board/detail/{boardId}": {
+      "get": {
+        "summary": "View a specific board post",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "description": "조회할 게시글 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "게시글 상세 정보",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "board_id": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "content": { "type": "string" },
+                    "writer": { "type": "string" },
+                    "isOwner": { "type": "boolean", "description": "로그인한 사용자가 소유자인 경우 true" },
+                    "cls": { "type": "string", "description": "사용자 등급" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "게시글을 찾을 수 없음"
+          },
+          "500": {
+            "description": "내부 서버 오류"
+          }
+        }
+      }
+    },
+    "/board/create": {
+      "get": {
+        "summary": "Get information for creating a board post (user details)",
+        "responses": {
+          "200": {
+            "description": "게시글 작성을 위한 사용자 정보",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "loginid": { "type": "string" },
+                    "type_id": { "type": "integer", "example": 3 }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "권한 없음, 로그인 필요",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "로그인이 필요합니다." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/board/create_process": {
+      "post": {
+        "summary": "Create a new board post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "loginid": { "type": "string" },
+                  "password": { "type": "string", "description": "게시글 비밀번호 (게시판 유형에 따라 필요할 수 있음)" },
+                  "title": { "type": "string" },
+                  "content": { "type": "string" }
+                },
+                "required": ["loginid", "title", "content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "성공적으로 생성됨, 게시판 보기로 리디렉션"
+          },
+          "500": {
+            "description": "내부 서버 오류"
+          }
+        }
+      }
+    },
+    "/board/update_process": {
+      "post": {
+        "summary": "Update an existing board post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "boardId": { "type": "integer" },
+                  "password": { "type": "string", "description": "게시글 비밀번호" },
+                  "title": { "type": "string" },
+                  "content": { "type": "string" }
+                },
+                "required": ["boardId", "password", "title", "content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "성공적으로 업데이트됨, 게시글 상세 정보로 리디렉션"
+          },
+          "500": {
+            "description": "내부 서버 오류"
+          }
+        }
+      }
+    },
+     "/board/update": {
+      "post": {
+        "summary": "Check password for updating a board post",
+        "responses": {
+          "200": {
+            "description": "비밀번호 일치, 수정 권한 확인됨"
+          },
+          "400": {
+            "description": "잘못된 요청, boardId 또는 비밀번호 누락"
+          },
+          "403": {
+            "description": "금지됨, 비밀번호 불일치"
+          },
+          "404": {
+            "description": "게시글을 찾을 수 없음"
+          },
+          "500": {
+            "description": "내부 서버 오류"
+          }
+        }
+      }
+    },
+    "/board/delete_process/{boardId}": {
+      "get": {
+        "summary": "Delete a board post",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "description": "삭제할 게시글 ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "성공적으로 삭제됨, 리디렉션"
+          },
+          "200": {
+             "description": "비밀번호 불일치 (알림용 HTML 스크립트 반환)"
+          },
+          "500": {
+            "description": "내부 서버 오류"
+          }
+        }
+      }
+    },
+    "/user-info": {
+      "get": {
+        "summary": "Get current user's information",
+        "responses": {
+          "200": {
+            "description": "사용자 정보",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "point": { "type": "integer" },
+                    "grade": { "type": "string" },
+                    "class": { "type": "string", "description": "사용자 등급" }
+                  },
+                  "example": {
+                    "name": "홍길동",
+                    "point": 100,
+                    "grade": "A",
+                    "class": "CST"
+                  }
+                }
+              }
+            }
+          },
+           "500": {
+            "description": "서버 오류"
+          }
+        }
+      }
+    },
+    "/image/upload": {
+      "post": {
+        "summary": "Upload an image file",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "파일이 성공적으로 업로드되었습니다. 메시지는 사용자가 'normaluser'(포인트 적립)인지 'proxyuser'(포인트 없음)인지 나타냅니다.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "normaluser" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청, 업로드된 파일 없음",
+             "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "파일이 업로드되지 않았습니다." }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "파일 업로드 또는 포인트 업데이트 중 서버 오류",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "파일 업로드 중 오류가 발생했습니다." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 
