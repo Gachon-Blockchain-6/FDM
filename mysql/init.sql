@@ -69,8 +69,8 @@ CREATE TABLE dataset (
     price        DECIMAL(12,2) NOT NULL,            -- 가격
     sale_yn      CHAR(1)       NOT NULL DEFAULT 'N',-- 판매 여부(Y/N)
     content      VARCHAR(255),                      -- 설명(선택)
-    onchain_yn   ENUM('Y','N') NOT NULL DEFAULT 'N',-- 온체인 업로드 여부
-    onchain_hash CHAR(66)      DEFAULT NULL,        -- 트랜잭션 해시(0x…)
+    onchain_yn   ENUM('Y','N') NOT NULL DEFAULT 'N', -- 온체인 업로드 여부
+    onchain_hash VARCHAR(66)      DEFAULT NULL        -- 트랜잭션 해시(0x…)
 );
 
 -- 5. 라벨(label)
