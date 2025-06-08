@@ -15,7 +15,7 @@
       "post": {
         "summary": "User login",
         "requestBody": {
-          "required": true,
+          "required": true, 
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
@@ -511,6 +511,133 @@
               }
             }
           }
+        }
+      }
+    },
+    "/label/create_dataset": {
+      "post": {
+        "summary": "데이터셋 생성 (관리자용)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "price": { "type": "number" },
+                  "content": { "type": "string" }
+                },
+                "required": ["name", "price"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "데이터셋 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "datasetId": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "필수값 누락/유효성 오류" },
+          "403": { "description": "권한 없음" },
+          "500": { "description": "서버 오류" }
+        }
+      }
+    },
+    "/label/vote_label": {
+      "post": {
+        "summary": "라벨 투표(제출)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "datasetid": { "type": "integer" },
+                  "imagePath": { "type": "string" },
+                  "label": { "type": "string" }
+                },
+                "required": ["datasetid", "imagePath", "label"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "투표 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "labelId": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "로그인 필요" },
+          "409": { "description": "중복 투표" },
+          "500": { "description": "서버 오류" }
+        }
+      }
+    },
+    "/label/show_label/{datasetid}": {
+      "get": {
+        "summary": "데이터셋별 라벨 목록 조회",
+        "parameters": [
+          {
+            "name": "datasetid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "라벨 목록 반환",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label_id": { "type": "integer" },
+                          "datasetid": { "type": "integer" },
+                          "cid": { "type": "integer" },
+                          "imagePath": { "type": "string" },
+                          "grade": { "type": "string" },
+                          "label": { "type": "string" },
+                          "correct": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "datasetid 누락" },
+          "500": { "description": "서버 오류" }
         }
       }
     }

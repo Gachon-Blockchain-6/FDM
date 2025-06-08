@@ -9,6 +9,7 @@ const authRouter = require('./router/authRouter');
 const rootRouter = require('./router/rootRouter');
 const boardRouter = require('./router/boardRouter');
 const uploadRouter = require('./router/uploadRouter');
+const labelRouter = require('./router/labelRouter');
 
 // 세션 DB 정의
 const options = {
@@ -46,7 +47,7 @@ app.use('/api', rootRouter);
 app.use('/api/auth', authRouter); 
 app.use('/api/board', boardRouter);
 app.use('/api/image', uploadRouter);  
-
+app.use('/api/label', labelRouter);
 // Swagger UI 설정
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
