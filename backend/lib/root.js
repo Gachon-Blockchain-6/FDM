@@ -38,7 +38,7 @@ module.exports = {
                 name: 'GUEST'
             });
         }
-
+        
         // 데이터베이스에서 사용자 정보 조회
         const sanitized_loginid = sanitizeHtml(loginid);
         const query = `SELECT * FROM person WHERE loginid = ?`;
@@ -57,7 +57,7 @@ module.exports = {
                     name: 'GUEST'
                 });
             }
-
+            console.log(`results = ${JSON.stringify(results[0])}`);
             // 사용자 정보 반환
             const { point, grade, class: userClass, name } = results[0];
 
