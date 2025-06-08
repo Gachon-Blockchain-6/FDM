@@ -5,7 +5,7 @@ const root = require('../lib/root');
 
 router.get("/user-info", (req, res) => {
     if (!req.session.is_logined) {
-        return res.json({ point: 0, grade: C, class: 'proxy' });
+        return res.json({ point: 0, grade: 'C', class: 'proxy' });
     }
     root.userinfo(req, res);
 });
