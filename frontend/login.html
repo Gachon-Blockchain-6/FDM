@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <!-- ✅ 공통 상단 헤더 -->
+  <div id="header-container"></div>
+
+  <main class="login-container">
+    <h2>로그인</h2>
+    <input type="text" id="username" placeholder="아이디">
+    <input type="password" id="password" placeholder="비밀번호">
+    <button id="loginBtn">로그인</button>
+    <p id="login-error" style="color: red; display: none;">아이디 또는 비밀번호가 틀렸습니다.</p>
+
+    <div class="link-options" style="margin-top: 20px;">
+      <a href="registerPage.html" class="link-option">회원가입</a> |
+      <a href="findPassword.html" class="link-option">비밀번호 찾기</a>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <a href="#" id="proxyBtn" class="proxy-link">로그인 없이 이용하기</a>
+    </div>
+
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('loginBtn').onclick = async function () {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!username || !password) {
+          alert('ID와 비밀번호를 입력해주세요.');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/auth/login_process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ loginid: username, password }),
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            localStorage.setItem('isLoggedIn', 'true');
+            alert('로그인 성공!');
+            window.location.href = '/home.html';
+          } else {
+            document.getElementById('login-error').style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('로그인 중 문제가 발생했습니다.');
+        }
+      };
+
+      document.getElementById('proxyBtn').onclick = async function (e) {
+        e.preventDefault();
+        try {
+          const response = await fetch('/api/auth/proxy_login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            localStorage.setItem('isLoggedIn', 'true');
+            alert('임시 계정으로 로그인했습니다.');
+            window.location.href = '/home.html';
+          } else {
+            alert('프록시 로그인 실패: ' + result.message);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('프록시 로그인 중 문제가 발생했습니다.');
+        }
+      };
+    });
+  </script>
+</body>
+</html>

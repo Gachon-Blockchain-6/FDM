@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>라벨링</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <!-- 상단 헤더 -->
+  <div id="header-container"></div>
+
+  <div class="labeling-container">
+    <h1>강아지 고양이 라벨링</h1>
+    <button class="start-button" onclick="startLabeling()">시작하기</button>
+
+    <div class="labeling-task" style="display: none;">
+        <div class="image-box">
+            <img id="label-image" src="assets/sample-dog.jpg" alt="분류할 이미지">
+        </div>
+        <div class="button-box">
+            <button class="label-btn dog" data-label="dog">강아지</button>
+            <button class="label-btn cat" data-label="cat">고양이</button>
+            <button class="label-btn none" data-label="none">없음</button>
+        </div>
+    </div>
+
+    <!-- 하단 완료 버튼 -->
+    <div class="complete-box" style="display: none;">
+        <button class="complete-button" onclick="submitLabel()">선택 완료</button>
+    </div>
+  </div>
+  <!-- 결과 화면 -->
+<div class="result-screen" style="display: none;">
+  <p>데이터 전송 완료!</p>
+  <button onclick="nextImage()">다음</button>
+</div>
+
+  <script src="scripts/labeling.js"></script>
+<script src="scripts/injectHeader.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (!isLoggedIn) {
+      alert('로그인이 필요합니다.');
+      location.href = 'login.html';
+    }
+  });
+</script>
+
+  </script>
+  
+</body>
+</html>

@@ -1,46 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파일 업로드 테스트</title>
-    <link rel="stylesheet" href="/styles/tab.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>파일 업로드</title>
+  <link rel="stylesheet" href="styles/style.css" />
 </head>
-
 <body>
-    <!-- 탭 메뉴 -->
-    <div id="tabContainer">
-        <button id="tabButton">☰</button>
-        <div id="tabs">
-            <a href="/home.html">Home</a>
-            <br>
-            <a href="/uploadTest.html">이미지 업로드 하러 가기</a>
-            <br>
-            <a href="/test.html">데이터셋 라벨링 하러 가기</a>
-            <br>
-            <a href="/boardView.html">게시판 보기</a>
-            <br>
-            <a href="/test.html">데이터셋 상점 보기</a>
-            <br><br>
-            <button id="authButton">로그인</button>
-        </div>
+
+  <!-- ✅ 공통 상단 헤더 -->
+  <div id="header-container"></div>
+
+  <!-- ✅ 본문 -->
+    <div class="upload-container">
+    <h1>파일 업로드</h1>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" required />
+        <br>
+        <button type="submit">업로드</button>
+    </form>
     </div>
 
-    <!-- 파일 업로드 폼 -->
-    <div id="content">
-        <h1>파일 업로드 테스트</h1>
-        <div class = "mb-3">
-        <form id="uploadForm" enctype="multipart/form-data">
-            <input type="file" id="fileInput" name="file" required />
-            <button type="submit">업로드</button>
-        </div>
-        </form>
-    </div>
-
-    <!-- 스크립트 -->
-    <script src="scripts/tab.js"></script>
-    <script src="scripts/uploadTest.js"></script>
+  <!-- ✅ 스크립트 -->
+  <script src="scripts/uploadTest.js"></script>
+  <script src="scripts/injectHeader.js"></script>
 </body>
-
 </html>
