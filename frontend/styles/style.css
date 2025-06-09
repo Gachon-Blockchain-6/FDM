@@ -549,3 +549,59 @@ body {
   text-decoration: underline;
 }
 /* ===== 회원가입 전용 스타일 끝 ===== */
+/* ===== 데이터셋 생성 페이지 스타일 ===== */
+.dataset-container { 
+  max-width: 500px; 
+  margin: 40px auto; 
+  background: #fff; 
+  padding: 30px; 
+  border-radius: 10px; 
+  box-shadow: 0 2px 8px #ddd; 
+}
+
+.dataset-container h2 { 
+  text-align: center; 
+  margin-bottom: 20px;
+}
+
+.dataset-container label { 
+  display: block; 
+  margin-top: 15px; 
+  font-weight: bold; 
+}
+
+.dataset-container input, .dataset-container textarea { 
+  width: 100%; 
+  padding: 8px; 
+  margin-top: 5px; 
+  border: 1px solid #ccc; 
+  border-radius: 4px; 
+  box-sizing: border-box; 
+}
+
+.dataset-container button { 
+  margin-top: 20px; 
+  width: 100%; 
+  padding: 10px; 
+  color: #fff; 
+  border: none; 
+  border-radius: 4px; 
+  font-size: 16px; 
+  cursor: pointer; 
+}
+
+.dataset-container button[type="submit"] { 
+  background: #1976d2; 
+}
+
+.dataset-container #add-option-btn { 
+  background: #5cb85c; 
+  margin-top: 10px; 
+}
+
+.dataset-container .message { 
+  margin-top: 20px; 
+  font-weight: bold; 
+  text-align: center; 
+}
+
