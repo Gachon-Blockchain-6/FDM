@@ -3,23 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <title>데이터셋 생성</title>
-  <style>
-    body { font-family: '맑은 고딕', sans-serif; background: #f8f8f8; }
-    .container { max-width: 500px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px #ddd; }
-    h2 { text-align: center; margin-bottom: 20px;}
-    label { display: block; margin-top: 15px; font-weight: bold; }
-    input, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    button { margin-top: 20px; width: 100%; padding: 10px; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
-    button[type="submit"] { background: #1976d2; }
-    #add-option-btn { background: #5cb85c; margin-top: 10px; }
-    .option-field { display: flex; align-items: center; margin-top: 10px; }
-    .option-input { flex-grow: 1; margin-right: 10px; margin-top: 0; }
-    .remove-option-btn { background: #d9534f; padding: 5px 10px; font-size: 12px; width: auto; margin: 0; }
-    .message { margin-top: 20px; font-weight: bold; text-align: center; }
-  </style>
+  <link rel="stylesheet" href="styles/style.css">
+  
 </head>
 <body>
-  <div class="container">
+  <!-- ✅ 상단 헤더 -->
+  <div id="header-container"></div>
+
+  <div class="dataset-container">
     <h2>데이터셋 생성</h2>
     <form id="datasetForm">
       <label for="name">데이터셋 이름</label>
@@ -46,5 +37,6 @@
   </div>
 
   <script src="scripts/datasetCreate.js" defer></script>
+  <script src="scripts/injectHeader.js"></script>
 </body>
 </html>
