@@ -77,7 +77,30 @@ services:
       - "9001:9001"
     volumes:
       - ./miniO:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: always
+
+  minio-mc:
+    image: minio/mc
+    container_name: minio-mc-container
+    depends_on:
+      minio:
+        condition: service_healthy # MinIO 서비스가 healthy 상태가 된 후 실행
+    entrypoint: /init/create-bucket.sh
+    volumes:
+      - ./init:/init # 스크립트가 있는 디렉토리를 컨테이너의 /init으로 마운트
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_BUCKET_NAME: uploads # 버킷 이름 설정 (필요에 따라 변경)
+    networks:
+      - app-network
+    restart: on-failure # 실패 시 재시도
 
   truffle:
     build:
