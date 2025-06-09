@@ -18,3 +18,12 @@
 13:00:03.392067 db@open done T·46.383048ms
 14:18:19.007349 db@close closing
 14:18:19.008873 db@close done T·1.525301ms
+=============== Jun 9, 2025 (UTC) ===============
+19:13:21.625352 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+19:13:21.638579 version@stat F·[2] S·985KiB[985KiB] Sc·[0.50]
+19:13:21.639006 db@open opening
+19:13:21.640198 journal@recovery F·1
+19:13:21.643286 journal@recovery recovering @6
+19:13:21.649999 version@stat F·[2] S·985KiB[985KiB] Sc·[0.50]
+19:13:21.669501 db@janitor F·4 G·0
+19:13:21.669692 db@open done T·30.540876ms
