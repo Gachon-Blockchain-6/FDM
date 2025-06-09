@@ -1,0 +1,5 @@
+admin.nodeInfo.enode
+admin.addPeer("enode://ec6a609c68a1e386219ac4357a0fd27bb9ce6e3435c3de85bd8db2ac2138f7fa92e1d66a9353d8bdbd99ff7e198f4a21f83b91dc0369992683b5223e183d3989@geth-node1:30303")
+admin.peers
+admin.peers.length
+admin.peers.map(p => p.network.remoteAddress)

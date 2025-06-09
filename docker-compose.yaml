@@ -92,7 +92,51 @@ services:
     ports:
       - "9545:9545"  
     tty: true
-    
+
+  geth-node1:
+    image: ethereum/client-go:v1.10.15
+    container_name: geth-node1
+    volumes:
+      - ./geth-network/node1:/root/.ethereum
+    command:
+      --networkid 1004 --http --http.addr 0.0.0.0 --http.port 8545
+      --port 30303 --http.api eth,net,web3,personal,miner --allow-insecure-unlock
+      --datadir /root/.ethereum --syncmode full
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+    networks:
+      - app-network
+
+  geth-node2:
+    image: ethereum/client-go:v1.10.15
+    container_name: geth-node2
+    volumes:
+      - ./geth-network/node2:/root/.ethereum
+    command:
+      --networkid 1004 --http --http.addr 0.0.0.0 --http.port 8546
+      --port 30304 --http.api eth,net,web3,personal,miner --allow-insecure-unlock
+      --datadir /root/.ethereum --syncmode full
+    ports:
+      - "8546:8546"
+      - "30304:30304"
+    networks:
+      - app-network
+
+  geth-node3:
+    image: ethereum/client-go:v1.10.15
+    container_name: geth-node3
+    volumes:
+      - ./geth-network/node3:/root/.ethereum
+    command:
+      --networkid 1004 --http --http.addr 0.0.0.0 --http.port 8547
+      --port 30305 --http.api eth,net,web3,personal,miner --allow-insecure-unlock
+      --datadir /root/.ethereum --syncmode full
+    ports:
+      - "8547:8547"
+      - "30305:30305"
+    networks:
+      - app-network
 networks:
   app-network:
     driver: bridge

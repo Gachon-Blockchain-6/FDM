@@ -1,0 +1,30 @@
+=============== Jun 9, 2025 (UTC) ===============
+12:56:37.021850 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+12:56:37.032562 db@open opening
+12:56:37.037248 version@stat F·[] S·0B[] Sc·[]
+12:56:37.040285 db@janitor F·2 G·0
+12:56:37.040494 db@open done T·7.703955ms
+12:56:37.043698 db@close closing
+12:56:37.044691 db@close done T·992.22µs
+=============== Jun 9, 2025 (UTC) ===============
+13:00:03.308537 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+13:00:03.326560 version@stat F·[] S·0B[] Sc·[]
+13:00:03.327505 db@open opening
+13:00:03.329827 journal@recovery F·1
+13:00:03.335341 journal@recovery recovering @1
+13:00:03.341246 memdb@flush created L0@2 N·10 S·617B "H(\x93..J\xf8\xd4,v3":"r\x00\x00..J\xf8\xd4,v5"
+13:00:03.357078 version@stat F·[1] S·617B[617B] Sc·[0.25]
+13:00:03.377910 db@janitor F·3 G·0
+13:00:03.378151 db@open done T·50.120308ms
+=============== Jun 9, 2025 (UTC) ===============
+13:04:31.873326 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+13:04:31.877514 version@stat F·[1] S·617B[617B] Sc·[0.25]
+13:04:31.877909 db@open opening
+13:04:31.878834 journal@recovery F·1
+13:04:31.881487 journal@recovery recovering @3
+13:04:31.886202 memdb@flush created L0@5 N·7 S·341B "Dat..ion,v12":"unc..own,v18"
+13:04:31.891291 version@stat F·[2] S·958B[958B] Sc·[0.50]
+13:04:31.907610 db@janitor F·4 G·0
+13:04:31.907836 db@open done T·29.805539ms
+14:18:19.016962 db@close closing
+14:18:19.022113 db@close done T·5.141952ms
