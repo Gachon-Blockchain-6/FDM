@@ -68,10 +68,20 @@ async function syncUserInfoAndMenu() {
 }
 
 function logout() {
-  fetch('/api/logout', { method: 'POST' })
-    .then(() => window.location.reload())
+  fetch('/api/auth/logout_process', {
+    method: 'GET',
+    credentials: 'include', // 세션 기반일 경우 쿠키 포함 필요
+  })
+    .then(res => {
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        throw new Error('로그아웃 실패: ' + res.status);
+      }
+    })
     .catch(err => {
       console.error('로그아웃 실패:', err);
       alert('로그아웃 중 문제가 발생했습니다.');
     });
 }
+
