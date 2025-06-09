@@ -24,9 +24,13 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     console.log('uploadRouter called');
     const file = req.file;
     const userName = req.session ? req.session.name : null; // 세션에서 사용자 이름 가져오기
+    const { dataset_ids } = req.body; // 프론트에서 전송된 데이터셋 ID 목록
 
     if (!file) {
         return res.status(400).json({ success: false, message: '파일이 업로드되지 않았습니다.' });
+    }
+    if (!dataset_ids) {
+        return res.status(400).json({ success: false, message: '데이터셋이 선택되지 않았습니다.' });
     }
 
     try {
@@ -50,6 +54,29 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                 }
 
                 console.log('File uploaded successfully:', etag);
+
+                // 업로드 성공 후 label 테이블에 정보 저장
+                try {
+                    const ids = dataset_ids.split(',');
+                    const sourcePath = `${objectName}`; // MinIO 내 객체 이름
+
+                    for (const id of ids) {
+                        await db.query(
+                            'INSERT INTO label (dataset_id, onchainYn, source, finalOption) VALUES (?, ?, ?, ?)',
+                            [id, 'N', sourcePath, null]
+                        );
+                    }
+                    console.log('Label info inserted successfully for dataset IDs:', ids);
+
+                } catch (dbError) {
+                    console.error('라벨 정보 저장 오류:', dbError);
+                    // 여기서 MinIO에 업로드된 파일을 삭제하는 롤백 로직을 추가할 수 있습니다.
+                    minioClient.removeObject(bucketName, objectName, (rmErr) => {
+                        if (rmErr) console.error('MinIO 파일 삭제 오류 (롤백 실패):', rmErr);
+                    });
+                    return res.status(500).json({ success: false, message: '라벨 정보 저장 중 오류가 발생했습니다.' });
+                }
+
 
                 // 세션에 사용자가 Guest이거나 로그인이 되어 있지 않은 경우 포인트 지급 없이 업로드만 진행
                 if (!userName || userName === 'Guest') {
