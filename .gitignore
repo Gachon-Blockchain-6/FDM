@@ -1,2 +1,17 @@
-# miniO 파일
-*.meta
+# MinIO 내부 시스템 폴더 전체 무시
+miniO/.minio.sys/
+
+# MinIO 내부 메타데이터 파일 무시
+miniO/**/*.xl.meta
+miniO/**/*.meta
+miniO/**/*.bin
+miniO/**/*.bkp
+
+# MinIO 임시 파일 무시
+miniO/tmp/
+miniO/**/*.tmp
+
+# 사용자가 업로드한 이미지나 파일은 추적하고 싶다면 이건 주석 처리하지 마세요
+miniO/uploads/ ← 이 디렉토리는 추적됨 (단, 내부 파일이 위 확장자면 무시됨)
+
+geth-network/**/geth.ipc

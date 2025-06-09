@@ -1,0 +1,20 @@
+=============== Jun 9, 2025 (UTC) ===============
+12:57:12.580687 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+12:57:12.593328 db@open opening
+12:57:12.596321 version@stat F·[] S·0B[] Sc·[]
+12:57:12.599167 db@janitor F·2 G·0
+12:57:12.599348 db@open done T·5.82436ms
+12:57:12.602728 db@close closing
+12:57:12.603623 db@close done T·892.475µs
+=============== Jun 9, 2025 (UTC) ===============
+13:00:03.338646 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+13:00:03.344776 version@stat F·[] S·0B[] Sc·[]
+13:00:03.345496 db@open opening
+13:00:03.346885 journal@recovery F·1
+13:00:03.355200 journal@recovery recovering @1
+13:00:03.361991 memdb@flush created L0@2 N·10 S·617B "H(\x93..J\xf8\xd4,v3":"r\x00\x00..J\xf8\xd4,v5"
+13:00:03.372333 version@stat F·[1] S·617B[617B] Sc·[0.25]
+13:00:03.391844 db@janitor F·3 G·0
+13:00:03.392067 db@open done T·46.383048ms
+14:18:19.007349 db@close closing
+14:18:19.008873 db@close done T·1.525301ms
