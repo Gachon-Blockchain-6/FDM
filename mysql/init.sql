@@ -50,7 +50,6 @@ VALUES (3, 0, 'm', 'm', 'Notice - Usage Guide', NOW(), 'Feel free to share your 
 
 
 
--- 댓글 테이블 정의
 CREATE TABLE comment (
     comment_id INT AUTO_INCREMENT PRIMARY KEY, -- 댓글 ID
     board_id INT NOT NULL, -- 댓글이 달린 게시글 ID
@@ -61,44 +60,58 @@ CREATE TABLE comment (
     FOREIGN KEY (board_id) REFERENCES board(board_id) ON DELETE CASCADE -- 게시글 삭제 시 댓글도 삭제
 );
 
-
--- 4. 데이터셋(dataset)
 CREATE TABLE dataset (
-    datasetid    INT AUTO_INCREMENT PRIMARY KEY,
-    name         VARCHAR(100)  NOT NULL,            -- 데이터셋 이름
-    price        DECIMAL(12,2) NOT NULL,            -- 가격
-    sale_yn      CHAR(1)       NOT NULL DEFAULT 'N',-- 판매 여부(Y/N)
-    content      VARCHAR(255),                      -- 설명(선택)
-    onchain_yn   ENUM('Y','N') NOT NULL DEFAULT 'N', -- 온체인 업로드 여부
-    onchain_hash VARCHAR(66)      DEFAULT NULL        -- 트랜잭션 해시(0x…)
+    dataset_id   INT AUTO_INCREMENT PRIMARY KEY,      -- 데이터셋 고유 ID
+    name         VARCHAR(200)    NOT NULL,            -- 데이터셋 이름
+    price        INT            NOT NULL,             -- 가격(KRW)
+    content      VARCHAR(255),                        -- 설명
+    sale_yn      CHAR(1)       NOT NULL DEFAULT 'N',  -- 판매 여부('Y'/'N')
+    question     VARCHAR(255)   NOT NULL              -- 라벨링 질문 문구
 );
 
--- 5. 라벨(label)
 CREATE TABLE label (
-    label_id   INT AUTO_INCREMENT PRIMARY KEY,
-    datasetid  INT         NOT NULL,
-    cid        INT         NOT NULL,                -- 라벨러
-    imagePath  VARCHAR(255) NOT NULL,               -- S3·MinIO 경로
-    grade      VARCHAR(1)  NOT NULL,                -- 제출 당시 신뢰도
-    label      VARCHAR(100) NOT NULL,               -- 라벨 값
-    correct    ENUM('Y','N') DEFAULT 'N',           -- 정답/보상 플래그
-    FOREIGN KEY (datasetid) REFERENCES dataset(datasetid) ON DELETE CASCADE,
-    FOREIGN KEY (cid)       REFERENCES person(cid),
-    -- 동일 이미지에 같은 사용자가 여러 번 제출 못 하도록
-    CONSTRAINT uq_label_unique UNIQUE (datasetid, imagePath, cid)
+    label_id       INT AUTO_INCREMENT PRIMARY KEY,     -- 라벨 아이디
+    dataset_id     INT            NOT NULL,            -- 어떤 데이터셋에 대한 최종 라벨인지
+    onchainYN      ENUM('Y','N') NOT NULL DEFAULT 'N', -- 온체인 등록 여부
+    onchainHash    VARCHAR(66),                        -- 트랜잭션 해시
+    source         VARCHAR(255),                       -- 이미지 경로 등(필요 시)
+    finalOption    VARCHAR(255),                       -- 최종 라벨링 내용(옵션 텍스트)
+    FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)
 );
 
--- 6. 구매 이력(purchase)
-CREATE TABLE purchase (
-    purchase_id INT AUTO_INCREMENT PRIMARY KEY,
-    datasetid   INT          NOT NULL,
-    loginid     VARCHAR(10)  NOT NULL,              -- 구매자
-    purchased_at TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-    price       DECIMAL(12,2) NOT NULL,             -- 결제 금액
-    point       INT          DEFAULT 0,             -- 사용 포인트
-    payYN       CHAR(1)      DEFAULT 'N',
-    cancel      CHAR(1)      DEFAULT 'N',
-    refund      CHAR(1)      DEFAULT 'N',
-    FOREIGN KEY (datasetid) REFERENCES dataset(datasetid) ON DELETE CASCADE,
-    FOREIGN KEY (loginid)  REFERENCES person(loginid)
+CREATE TABLE vote_option (
+    option_id      INT AUTO_INCREMENT PRIMARY KEY,     -- 옵션 고유 ID
+    dataset_id     INT            NOT NULL,            -- 어떤 데이터셋의 옵션인지
+    label_id       INT,                                -- (완전 확정 후)어느 label에 속하는지
+    content        VARCHAR(200) NOT NULL,              -- 옵션 텍스트
+    FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)
 );
+
+
+CREATE TABLE vote (
+    vote_id       INT AUTO_INCREMENT PRIMARY KEY,      -- 투표 고유 ID
+    cid           INT            NOT NULL,             -- 투표자(person.cid)
+    label_id      INT            NOT NULL,             -- 어떤 라벨에 대한 투표인지
+    content       VARCHAR(200)   NOT NULL,             -- 선택된 옵션 텍스트
+    grade         VARCHAR(10),                         -- 투표자 신뢰도(사후 계산)
+    correct       ENUM('Y','N','N/A'),                       -- 정답 여부(사후 계산)
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 투표 시간
+    FOREIGN KEY (cid)      REFERENCES person(cid),
+    FOREIGN KEY (label_id) REFERENCES label(label_id)
+);
+
+
+CREATE TABLE purchase (
+    purchase_id   INT AUTO_INCREMENT PRIMARY KEY,      -- 구매 고유 ID
+    dataset_id    INT            NOT NULL,             -- 구매한 데이터셋
+    cid           INT            NOT NULL,             -- 구매자(person.cid)
+    date          DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 구매 시각
+    price         INT,                                 -- 결제 금액
+    point         INT,                                 -- 사용한 포인트
+    payYN         CHAR(1)       NOT NULL DEFAULT 'N',  -- 결제 여부
+    cancel        CHAR(1)       NOT NULL DEFAULT 'N',  -- 취소 여부
+    refund        CHAR(1)       NOT NULL DEFAULT 'N',  -- 환불 여부
+    FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id),
+    FOREIGN KEY (cid)        REFERENCES person(cid)
+);
+

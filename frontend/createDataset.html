@@ -5,11 +5,17 @@
   <title>데이터셋 생성</title>
   <style>
     body { font-family: '맑은 고딕', sans-serif; background: #f8f8f8; }
-    .container { max-width: 400px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px #ddd; }
+    .container { max-width: 500px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px #ddd; }
+    h2 { text-align: center; margin-bottom: 20px;}
     label { display: block; margin-top: 15px; font-weight: bold; }
-    input, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
-    button { margin-top: 20px; width: 100%; padding: 10px; background: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 16px; }
-    .message { margin-top: 20px; font-weight: bold; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    button { margin-top: 20px; width: 100%; padding: 10px; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    button[type="submit"] { background: #1976d2; }
+    #add-option-btn { background: #5cb85c; margin-top: 10px; }
+    .option-field { display: flex; align-items: center; margin-top: 10px; }
+    .option-input { flex-grow: 1; margin-right: 10px; margin-top: 0; }
+    .remove-option-btn { background: #d9534f; padding: 5px 10px; font-size: 12px; width: auto; margin: 0; }
+    .message { margin-top: 20px; font-weight: bold; text-align: center; }
   </style>
 </head>
 <body>
@@ -25,40 +31,20 @@
       <label for="content">설명 (선택)</label>
       <textarea id="content" name="content" rows="3"></textarea>
 
+      <label for="question">라벨링 질문</label>
+      <input type="text" id="question" name="question" required>
+
+      <label>옵션</label>
+      <div id="options-container">
+        <!-- Dynamic option fields will be added here -->
+      </div>
+      <button type="button" id="add-option-btn">옵션 추가</button>
+
       <button type="submit">생성하기</button>
     </form>
     <div class="message" id="message"></div>
   </div>
 
-  <script>
-    document.getElementById('datasetForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const name = document.getElementById('name').value;
-      const price = document.getElementById('price').value;
-      const content = document.getElementById('content').value;
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = '';
-
-      try {
-        const res = await fetch('/api/label/create_dataset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, price, content })
-        });
-        const data = await res.json();
-        if (data.success) {
-          messageDiv.style.color = 'green';
-          messageDiv.textContent = '데이터셋이 성공적으로 생성되었습니다!';
-          document.getElementById('datasetForm').reset();
-        } else {
-          messageDiv.style.color = 'red';
-          messageDiv.textContent = data.message || '생성에 실패했습니다.';
-        }
-      } catch (err) {
-        messageDiv.style.color = 'red';
-        messageDiv.textContent = '서버 오류가 발생했습니다.';
-      }
-    });
-  </script>
+  <script src="scripts/datasetCreate.js" defer></script>
 </body>
 </html>
