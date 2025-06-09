@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>파일 업로드</title>
   <link rel="stylesheet" href="styles/style.css" />
+  <style>
+    .dataset-selection { margin-bottom: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+    .dataset-selection h2 { margin-top: 0; }
+    .dataset-selection label { margin-left: 8px; }
+    .dataset-selection div { margin-bottom: 8px; }
+  </style>
 </head>
 <body>
 
@@ -16,6 +22,14 @@
     <h1>파일 업로드</h1>
 
     <form id="uploadForm" enctype="multipart/form-data">
+        <div class="dataset-selection">
+            <h2>데이터셋 선택 (필수)</h2>
+            <div id="dataset-container">
+                <!-- 데이터셋 체크박스가 여기에 동적으로 추가됩니다. -->
+                <p>데이터셋을 불러오는 중입니다...</p>
+            </div>
+        </div>
+        
         <input type="file" id="fileInput" name="file" required />
         <br>
         <button type="submit">업로드</button>
