@@ -110,20 +110,6 @@ services:
       - app-network
     restart: on-failure # 실패 시 재시도
 
-  truffle:
-    build:
-      context: ./truffle
-      dockerfile: Dockerfile
-    container_name: truffle-container
-    networks:
-      - app-network
-    volumes:
-      - ./truffle:/app
-    # 개발용 포트(필요시)
-    ports:
-      - "9545:9545"  
-    tty: true
-
   geth-node1:
     image: ethereum/client-go:v1.10.15
     container_name: geth-node1
