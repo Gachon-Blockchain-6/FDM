@@ -46,3 +46,33 @@
 19:16:40.935280 version@stat F·[3] S·985KiB[985KiB] Sc·[0.75]
 19:16:40.953694 db@janitor F·5 G·0
 19:16:40.953882 db@open done T·27.305901ms
+=============== Jun 10, 2025 (UTC) ===============
+11:45:24.930309 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:45:24.935392 version@stat F·[3] S·985KiB[985KiB] Sc·[0.75]
+11:45:24.935842 db@open opening
+11:45:24.937076 journal@recovery F·1
+11:45:24.939075 journal@recovery recovering @13
+11:45:24.949102 memdb@flush created L0@15 N·1 S·204B "unc..own,v19120":"unc..own,v19120"
+11:45:24.954298 version@stat F·[4] S·985KiB[985KiB] Sc·[1.00]
+11:45:24.976324 db@janitor F·6 G·0
+11:45:24.976989 db@open done T·40.90744ms
+11:45:24.977064 table@compaction L0·4 -> L1·0 S·985KiB Q·19121
+11:45:25.276549 table@build created L1@18 N·12739 S·725KiB "Dat..ion,v12":"\xcdd\x0e..\x1f&r,v19114"
+11:45:25.276744 version@stat F·[0 1] S·725KiB[0B 725KiB] Sc·[0.00 0.01]
+11:45:25.280767 table@compaction committed F-3 S-260KiB Ke·0 D·6378 T·302.903805ms
+11:45:25.282133 table@remove removed @8
+11:45:25.283185 table@remove removed @5
+11:45:25.284406 table@remove removed @2
+11:47:31.527648 db@close closing
+11:47:31.529512 db@close done T·1.862557ms
+=============== Jun 10, 2025 (UTC) ===============
+11:49:43.518348 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:49:43.522373 version@stat F·[0 1] S·725KiB[0B 725KiB] Sc·[0.00 0.01]
+11:49:43.522688 db@open opening
+11:49:43.523645 journal@recovery F·1
+11:49:43.526691 journal@recovery recovering @16
+11:49:43.537878 memdb@flush created L0@19 N·4 S·6KiB "Sna..tor,v19123":"unc..own,v19122"
+11:49:43.542668 version@stat F·[1 1] S·731KiB[6KiB 725KiB] Sc·[0.25 0.01]
+11:49:43.570632 db@janitor F·5 G·1
+11:49:43.570764 db@janitor removing table-15
+11:49:43.572189 db@open done T·49.369274ms

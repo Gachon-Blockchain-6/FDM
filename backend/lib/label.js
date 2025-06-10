@@ -1,5 +1,46 @@
 const db = require('./db');
 const sanitizeHtml = require('sanitize-html');
+const Web3 = require('web3').default;
+
+// 스마트 컨트랙트 정보 (사용자 제공)
+const contractAbi = [
+    {
+        "inputs": [
+            { "internalType": "string", "name": "_name", "type": "string" },
+            { "internalType": "uint256", "name": "_bal", "type": "uint256" }
+        ],
+        "name": "regUser",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "string", "name": "_from", "type": "string" },
+            { "internalType": "string", "name": "_to", "type": "string" },
+            { "internalType": "uint256", "name": "_amount", "type": "uint256" }
+        ],
+        "name": "transBal",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "string", "name": "_name", "type": "string" }
+        ],
+        "name": "checkBal",
+        "outputs": [
+            { "internalType": "uint256", "name": "", "type": "uint256" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+
+const contractAddress = '0xfa5063c527b052357496c75bf0b364687f07b46b'; // 사용자 제공 주소
+const web3 = new Web3('http://127.0.0.1:8545'); // 사용자 제공 URL
+const contractInstance = new web3.eth.Contract(contractAbi, contractAddress);
 
 // Helper function for updating user grades within a transaction
 function updateUserGrade(connection, loginid, increase, callback) {
@@ -100,6 +141,10 @@ module.exports = {
     // 라벨링 데이터가 포함될 데이터셋을 생성합니다. (관리자용)
     create_dataset: (req, res) => {
         console.log('label.create_dataset invoked');
+        if (!db || typeof db.query !== 'function') {
+             console.error('Database module (./lib/db.js) is not available or not a valid db object for create_dataset.');
+             return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
+        }
         const { name, price, content, question, options } = req.body;
         console.log('--- Received data for new dataset ---');
         console.log('Name:', name);
@@ -154,18 +199,85 @@ module.exports = {
     
     datasetinfo: (req, res) => {
         console.log('label.datasetinfo');
-        db.query('SELECT * FROM dataset ORDER BY dataset_id DESC', (error, results) => {
-            if (error) {
-                console.error('DB Error on getting datasets:', error);
-                return res.status(500).json({ success: false, message: '데이터셋 목록을 불러오는 중 문제가 발생했습니다.' });
+        const { datasetid } = req.params;
+
+        if (!db || typeof db.query !== 'function') {
+            console.error('Database module (./lib/db.js) is not available or not a valid db object for datasetinfo.');
+            return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
+        }
+
+        if (datasetid) {
+            // 특정 데이터셋 정보 조회 (dataset_id, name, price, content, question)
+            const query = 'SELECT dataset_id, name, price, content, question FROM dataset WHERE dataset_id = ?';
+            db.query(query, [datasetid], (err, results) => {
+                if (err) {
+                    console.error('Error fetching specific dataset info:', err);
+                    return res.status(500).json({ success: false, message: '데이터베이스 조회 중 오류가 발생했습니다.' });
+                }
+                if (results.length === 0) {
+                    return res.status(404).json({ success: false, message: '해당 ID의 데이터셋을 찾을 수 없습니다.' });
+                }
+                return res.json({ success: true, data: results[0] });
+            });
+        } else {
+            // 전체 데이터셋 목록 조회 (dataset_id, name, price), 판매 중인 것만 (sale_yn = 'Y')
+            const query = "SELECT dataset_id, name, price, sale_yn FROM dataset WHERE sale_yn = 'Y'";
+            db.query(query, (err, results) => {
+                if (err) {
+                    console.error('Error fetching dataset list for upload:', err);
+                    return res.status(500).json({ success: false, message: '데이터베이스 조회 중 오류가 발생했습니다.' });
+                }
+                return res.json({ success: true, datasets: results });
+            });
+        }
+    },
+
+    // 새로운 서비스 함수: 특정 데이터셋의 모든 상세 정보 조회
+    get_dataset_all_details: (req, res) => {
+        console.log('label.get_dataset_all_details backend called');
+        const { datasetid } = req.params;
+        const userCid = req.session.cid; // 현재 로그인한 사용자의 cid
+
+        if (!db || typeof db.query !== 'function') {
+            console.error('Database module (./lib/db.js) is not available or not a valid db object for get_dataset_all_details.');
+            return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
+        }
+
+        if (!datasetid) {
+            return res.status(400).json({ success: false, message: 'datasetid 파라미터가 필요합니다.' });
+        }
+
+        const datasetQuery = 'SELECT * FROM dataset WHERE dataset_id = ?';
+        db.query(datasetQuery, [datasetid], (err, results) => {
+            if (err) {
+                console.error('Error fetching all dataset details for ID: ' + datasetid, err);
+                return res.status(500).json({ success: false, message: '데이터베이스 조회 중 오류가 발생했습니다. (dataset)' });
             }
-            res.status(200).json({
-                success: true,
-                datasets: results
+            if (results.length === 0) {
+                return res.status(404).json({ success: false, message: '해당 ID의 데이터셋을 찾을 수 없습니다.' });
+            }
+            
+            const datasetData = results[0];
+            
+            if (!req.session.is_logined || !userCid) {
+                // 로그인하지 않은 경우, 구매 여부 확인 없이 데이터셋 정보만 반환
+                return res.json({ success: true, data: { ...datasetData, isPurchased: false } });
+            }
+
+            // 로그인한 경우, 구매 여부 확인
+            const purchaseQuery = 'SELECT COUNT(*) AS purchase_count FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'';
+            db.query(purchaseQuery, [datasetid, userCid], (purchaseErr, purchaseResults) => {
+                if (purchaseErr) {
+                    console.error('Error checking purchase status for dataset ID: ' + datasetid + ' and user CID: ' + userCid, purchaseErr);
+                    return res.status(500).json({ success: false, message: '구매 정보 확인 중 오류가 발생했습니다.' });
+                }
+                
+                const isPurchased = purchaseResults[0].purchase_count > 0;
+                return res.json({ success: true, data: { ...datasetData, isPurchased } });
             });
         });
-    },  
-    
+    },
+
     labelinfo: (req, res) => {
         console.log('label.labelinfo invoked');
         if (!req.session.is_logined) {
@@ -202,6 +314,10 @@ module.exports = {
     // 특정 데이터셋에 속한 모든 옵션 정보를 가져옵니다.
     get_dataset_options: (req, res) => {
         console.log('label.get_dataset_options invoked');
+        if (!db || typeof db.query !== 'function') {
+             console.error('Database module (./lib/db.js) is not available or not a valid db object for get_dataset_options.');
+             return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
+        }
         if (!req.session.is_logined) {
             return res.status(401).json({ success: false, message: '로그인이 필요합니다. 데이터셋 옵션에 접근하려면 먼저 로그인해주세요.' });
         }
@@ -228,6 +344,10 @@ module.exports = {
     // 사용자의 라벨링 선택(투표)을 vote 테이블에 기록합니다.
     submit_label: (req, res) => {
         console.log('label.submit_label');
+        if (!db || typeof db.query !== 'function') {
+             console.error('Database module (./lib/db.js) is not available or not a valid db object for submit_label.');
+             return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
+        }
         const { label_id, finalOption } = req.body;
         const loginid = req.session.loginid;
         if (!req.session.is_logined || !loginid) {
@@ -293,6 +413,11 @@ module.exports = {
     // 투표를 종료하고 라벨링 결과를 블록체인에 기록합니다.
     close_voting: (datasetId, labelId, mainCallback) => {
         console.log('close_voting called for datasetId: ' + datasetId + ', labelId: ' + labelId);
+        if (!db || typeof db.query !== 'function' || typeof db.beginTransaction !== 'function') {
+             console.error('Database module (./lib/db.js) is not available or not a valid db object with transaction support for close_voting.');
+             const err = new Error('서버 내부 오류: 데이터베이스 모듈을 사용할 수 없거나 트랜잭션을 지원하지 않습니다.');
+             return mainCallback(err);
+        }
         const VOTE_THRESHOLD = 3;
         const connection = db;
         connection.beginTransaction(transactionError => {
@@ -348,40 +473,65 @@ module.exports = {
                                             console.error('DB Error updating finalOption for label ' + labelId + ':', updateError);
                                             return connection.rollback(() => mainCallback(updateError));
                                         }
-                                        console.log('Label ' + labelId + ' updated with finalOption: ' + finalLabelText);
-                                        connection.query('SELECT source FROM label WHERE label_id = ?', [labelId], (sourceError, labelSourceInfo) => {
-                                            if (sourceError) {
-                                                console.error('DB Error fetching source for label ' + labelId + ':', sourceError);
-                                                return connection.rollback(() => mainCallback(sourceError));
+                                        console.log('Label ' + labelId + ' updated with finalOption: ' + finalLabelText + '. Now updating grades.');
+
+                                        // Step 1: Update votes and grades based on the finalLabelText
+                                        updateVotesAndGradesCallback(connection, finalLabelText, labelId, voteDetails, (gradeUpdateError) => {
+                                            if (gradeUpdateError) {
+                                                console.error('DB Error during grade update for label ' + labelId + ':', gradeUpdateError);
+                                                return connection.rollback(() => mainCallback(gradeUpdateError));
                                             }
-                                            const sourceForBlockchain = labelSourceInfo && labelSourceInfo.length > 0 ? labelSourceInfo[0].source : 'N/A';
-                                            const blockchainPayload = [{ label_id: labelId, finalOption: finalLabelText, source: sourceForBlockchain }];
-                                            module.exports.upload_to_blockchain(datasetId, blockchainPayload)
-                                                .then(blockchainResult => {
-                                                    if (blockchainResult && blockchainResult.success) {
-                                                        connection.query('UPDATE label SET onchainYn = \'Y\', onchainHash = ? WHERE label_id = ?', [blockchainResult.hash, labelId], (onchainError) => {
-                                                            if (onchainError) {
-                                                                console.error('DB Error marking label onchain ' + labelId + ':', onchainError);
-                                                                return connection.rollback(() => mainCallback(onchainError));
-                                                            }
-                                                            console.log('Label ' + labelId + ' marked onchain with hash ' + blockchainResult.hash);
-                                                            updateVotesAndGradesCallback(connection, finalLabelText, labelId, voteDetails, (gradeUpdateError) => {
-                                                                if (gradeUpdateError) return connection.rollback(() => mainCallback(gradeUpdateError));
-                                                                connection.commit(commitErr => mainCallback(commitErr));
+                                            console.log('Grades updated for label ' + labelId + '. Proceeding to blockchain upload.');
+
+                                            // Step 2: Fetch source and upload to blockchain
+                                            connection.query('SELECT source FROM label WHERE label_id = ?', [labelId], (sourceError, labelSourceInfo) => {
+                                                if (sourceError) {
+                                                    console.error('DB Error fetching source for blockchain for label ' + labelId + ':', sourceError);
+                                                    return connection.rollback(() => mainCallback(sourceError));
+                                                }
+                                                const sourceForBlockchain = labelSourceInfo && labelSourceInfo.length > 0 ? labelSourceInfo[0].source : 'N/A';
+                                                const blockchainPayload = [{ label_id: labelId, finalOption: finalLabelText, source: sourceForBlockchain }];
+
+                                                module.exports.upload_to_blockchain(datasetId, blockchainPayload)
+                                                    .then(blockchainResult => {
+                                                        if (blockchainResult && blockchainResult.success && blockchainResult.hash) {
+                                                            connection.query('UPDATE label SET onchainYn = \'Y\', onchainHash = ? WHERE label_id = ?', [blockchainResult.hash, labelId], (onchainError) => {
+                                                                if (onchainError) {
+                                                                    console.error('DB Error marking label onchain ' + labelId + ':', onchainError);
+                                                                    return connection.rollback(() => mainCallback(onchainError));
+                                                                }
+                                                                console.log('Label ' + labelId + ' marked onchain with hash ' + blockchainResult.hash);
+                                                                connection.commit(commitErr => {
+                                                                    if (commitErr) {
+                                                                        console.error('DB commit error after successful onchain marking for label ' + labelId + ':', commitErr);
+                                                                        return mainCallback(commitErr);
+                                                                    }
+                                                                    mainCallback(null); // All successful
+                                                                });
                                                             });
-                                                        });
-                                                    } else {
-                                                        console.error('Blockchain upload failed for label ' + labelId + '. Error: ' + (blockchainResult ? blockchainResult.error : 'Unknown error'));
-                                                        updateVotesAndGradesCallback(connection, finalLabelText, labelId, voteDetails, (gradeUpdateError) => {
-                                                            if (gradeUpdateError) return connection.rollback(() => mainCallback(gradeUpdateError));
-                                                            connection.commit(commitErr => mainCallback(commitErr));
-                                                        });
-                                                    }
-                                                })
-                                                .catch(bcError => {
-                                                    console.error('Blockchain upload promise failed for label ' + labelId + ':', bcError);
-                                                    return connection.rollback(() => mainCallback(bcError));
-                                                });
+                                                        } else {
+                                                            // Blockchain upload itself reported failure (e.g., success:false) or no hash returned.
+                                                            // DB changes (finalOption, grade updates) are already part of the transaction.
+                                                            // We commit these DB changes but acknowledge blockchain part failed.
+                                                            const bcLogicalFailureError = new Error('Blockchain upload failed or returned no hash, but database changes (final option, grades) were committed.');
+                                                            console.error('Blockchain upload logical failure for label ' + labelId + ': ' + (blockchainResult ? blockchainResult.error : 'Unknown or no hash from blockchain module'), blockchainResult);
+                                                            connection.commit(commitErr => {
+                                                                if (commitErr) {
+                                                                    console.error('DB commit error after failed blockchain upload for label ' + labelId + ':', commitErr);
+                                                                    // Pass original commit error if commit fails
+                                                                    return mainCallback(commitErr);
+                                                                }
+                                                                // Pass the specific error indicating DB success but BC failure.
+                                                                mainCallback(bcLogicalFailureError);
+                                                            });
+                                                        }
+                                                    })
+                                                    .catch(bcError => { // Promise from upload_to_blockchain was rejected (catastrophic failure)
+                                                        console.error('Blockchain upload promise catastrophically failed for label ' + labelId + ':', bcError);
+                                                        // Rollback all DB changes (finalOption, grade updates) made in this transaction.
+                                                        return connection.rollback(() => mainCallback(bcError));
+                                                    });
+                                            });
                                         });
                                     });
                                 } else {
@@ -399,25 +549,247 @@ module.exports = {
         });
     },
 
-    /**
-     * 블록체인에 라벨링 결과를 기록합니다.
-     * @param {number} datasetId - 데이터셋 ID
-     * @param {Array} finalLabels - [{ imagePath, label, correctVoters, incorrectVoters }]
-     */
     upload_to_blockchain: async (datasetId, finalLabelsArray) => {
         try {
-            const record = {
-                datasetId,
-                results: finalLabelsArray,
-                timestamp: new Date().toISOString()
-            };
-            const dummyHash = '0x' + [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-            console.log('[블록체인 기록] 데이터:', JSON.stringify(record, null, 2));
-            console.log('[블록체인 기록] Simulated TxHash: ' + dummyHash + ' for dataset ' + datasetId);
-            return { success: true, hash: dummyHash };
+            console.log('[블록체인 기록 시작] Dataset ID:', datasetId, 'Labels:', finalLabelsArray);
+            const accounts = await web3.eth.getAccounts();
+            if (!accounts || accounts.length === 0) {
+                console.error('블록체인 기록 중 오류: 사용 가능한 계정이 없습니다.');
+                return { success: false, error: 'No accounts available for transaction.' };
+            }
+            const fromAccount = accounts[0];
+            console.log('Using account for transaction:', fromAccount);
+
+            const transactionReceipts = [];
+
+            for (const labelData of finalLabelsArray) {
+                const labelIdStr = String(labelData.label_id);
+                const nameArg = labelIdStr; // 또는 sourceStr 등 의미있는 문자열
+                const balArg = 0; // finalOption이 숫자라면 parseInt(finalOptionStr) 사용 가능
+
+                console.log(`[블록체인] Sending tx for label: ${nameArg}, value: ${balArg}`);
+
+                try {
+                    const receipt = await contractInstance.methods.regUser(nameArg, balArg).send({ 
+                        from: fromAccount, 
+                        gas: '1000000', // 적절한 가스 한도 설정
+                        gasPrice: web3.utils.toWei('30', 'gwei') // 적절한 가스 가격 설정
+                    });
+                    console.log('[블록체인 기록] TxHash for ' + nameArg + ': ' + receipt.transactionHash);
+                    transactionReceipts.push({ label_id: labelIdStr, transactionHash: receipt.transactionHash, status: true });
+                } catch (txError) {
+                    console.error('블록체인 트랜잭션 오류 for ' + nameArg + ':', txError.message);
+                    transactionReceipts.push({ label_id: labelIdStr, error: txError.message, status: false });
+                    // 하나라도 실패하면 전체 실패로 처리할지, 부분 성공으로 할지 정책 결정 필요
+                    // 여기서는 일단 계속 진행하고 결과에 실패 내역 포함
+                }
+            }
+
+            const allSuccessful = transactionReceipts.every(r => r.status);
+            
+            if (allSuccessful && transactionReceipts.length > 0) {
+                // 모든 트랜잭션이 성공한 경우, 마지막 트랜잭션 해시 또는 모든 해시 배열을 반환할 수 있습니다.
+                // 여기서는 첫번째 성공한 트랜잭션의 해시를 대표로 반환 (단일 해시를 기대하는 경우)
+                // 또는 모든 해시 정보를 담은 객체/배열을 반환할 수도 있습니다.
+                // 기존 로직은 단일 해시를 기대하므로, 첫번째 (또는 마지막) 해시를 반환합니다.
+                 const firstSuccessfulTx = transactionReceipts.find(r => r.status);
+                return { 
+                    success: true, 
+                    hash: firstSuccessfulTx ? firstSuccessfulTx.transactionHash : 'N/A', // 모든 트랜잭션 성공 시 대표 해시
+                    details: transactionReceipts 
+                };
+            } else if (transactionReceipts.some(r => r.status)) {
+                 // 부분 성공
+                const firstSuccessfulTx = transactionReceipts.find(r => r.status);
+                return {
+                    success: false, // 전체 성공은 아니므로 false로 표시하거나, success: 'partial' 등 다른 상태 사용 가능
+                    error: 'Some blockchain transactions failed.',
+                    hash: firstSuccessfulTx ? firstSuccessfulTx.transactionHash : 'N/A', // 성공한 것 중 하나의 해시
+                    details: transactionReceipts
+                };
+            } else {
+                // 모든 트랜잭션 실패
+                return { 
+                    success: false, 
+                    error: 'All blockchain transactions failed.',
+                    details: transactionReceipts
+                };
+            }
+
         } catch (err) {
-            console.error('블록체인 기록 중 오류:', err);
+            console.error('블록체인 기록 중 전체 오류:', err);
             return { success: false, error: err.message || 'Blockchain upload failed' };
         }
+    },
+
+    // 데이터셋 구매 (Async/Await 버전)
+    purchase: async (req, res) => {
+        console.log('label.purchase backend called');
+        if (!req.session.is_logined || !req.session.loginid || !req.session.cid) {
+            return res.status(401).json({ success: false, message: '로그인이 필요합니다.' });
+        }
+
+        const buyerLoginId = req.session.loginid;
+        const buyerCid = req.session.cid;
+        const { dataset_id } = req.body;
+
+        if (!dataset_id) {
+            return res.status(400).json({ success: false, message: '데이터셋 ID가 필요합니다.' });
+        }
+
+        if (!db || typeof db.query !== 'function') {
+            console.error('Database module is not available for purchase.');
+            return res.status(500).json({ success: false, message: '서버 내부 오류: DB 모듈 사용 불가.' });
+        }
+
+        try {
+            // 1. 데이터셋 정보 조회 (가격, 판매여부, 이름)
+            const datasetInfo = await new Promise((resolve, reject) => {
+                db.query('SELECT name, price, sale_yn FROM dataset WHERE dataset_id = ?', [dataset_id], (err, results) => {
+                    if (err) return reject(new Error('데이터셋 정보 조회 중 DB 오류: ' + err.message));
+                    if (results.length === 0) return reject(new Error('존재하지 않는 데이터셋입니다.'));
+                    if (results[0].sale_yn !== 'Y') return reject(new Error('현재 판매 중인 데이터셋이 아닙니다.'));
+                    resolve(results[0]);
+                });
+            });
+
+            const datasetPrice = datasetInfo.price;
+            const datasetName = datasetInfo.name;
+
+            // 2. 중복 구매 확인
+            const existingPurchase = await new Promise((resolve, reject) => {
+                db.query('SELECT purchase_id FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'', [dataset_id, buyerCid], (err, results) => {
+                    if (err) return reject(new Error('구매 이력 확인 중 DB 오류: ' + err.message));
+                    resolve(results);
+                });
+            });
+
+            if (existingPurchase.length > 0) {
+                return res.status(400).json({ success: false, message: '이미 구매한 데이터셋입니다.' });
+            }
+
+            // 3. 판매자 정보 조회 (여기서는 'm' 계정으로 고정)
+            const sellerLoginId = 'm';
+
+            // 4. 구매자 잔액 확인 (스마트 컨트랙트)
+            let buyerBalance;
+            try {
+                buyerBalance = await contractInstance.methods.checkBal(buyerLoginId).call();
+                console.log('[Purchase] Buyer (' + buyerLoginId + ') balance: ' + buyerBalance);
+            } catch (smcError) {
+                console.error('[Purchase] 스마트 컨트랙트 잔액 확인 오류 for ' + buyerLoginId + ':', smcError);
+                return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: 사용자 잔액 확인 실패 (' + smcError.message + ')' });
+            }
+            
+            const buyerBalanceBigInt = BigInt(buyerBalance);
+            const datasetPriceBigInt = BigInt(datasetPrice);
+
+            if (buyerBalanceBigInt < datasetPriceBigInt) {
+                return res.status(400).json({ success: false, message: '잔액이 부족합니다. (현재 잔액: ' + buyerBalance + ', 필요 금액: ' + datasetPrice + ')' });
+            }
+
+            // 5. 스마트 컨트랙트 이체 실행
+            let txReceipt;
+            const accounts = await web3.eth.getAccounts();
+            if (!accounts || accounts.length === 0) {
+                console.error('[Purchase] 스마트 컨트랙트 이체 오류: 사용 가능한 Ethereum 계정이 없습니다.');
+                return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: Ethereum 계정 없음.' });
+            }
+            const fromAccount = accounts[0]; 
+
+            try {
+                console.log('[Purchase] Attempting to transfer ' + datasetPrice + ' from ' + buyerLoginId + ' (payer: ' + fromAccount + ') to ' + sellerLoginId);
+                txReceipt = await contractInstance.methods.transBal(buyerLoginId, sellerLoginId, datasetPrice.toString())
+                    .send({ 
+                        from: fromAccount, 
+                        gas: '1000000', 
+                        gasPrice: web3.utils.toWei('10', 'gwei')
+                    });
+                console.log('[Purchase] 스마트 컨트랙트 이체 성공: TxHash ' + txReceipt.transactionHash);
+            } catch (smcError) {
+                console.error('[Purchase] 스마트 컨트랙트 이체 오류 (from: ' + buyerLoginId + ' to ' + sellerLoginId + ', amount: ' + datasetPrice + '):', smcError);
+                return res.status(500).json({ success: false, message: '스마트 컨트랙트 이체 실패: ' + smcError.message });
+            }
+
+            // 6. 구매 테이블에 기록
+            await new Promise((resolve, reject) => {
+                db.query(
+                    'INSERT INTO purchase (dataset_id, cid, date, price, payYN, transaction_hash) VALUES (?, ?, NOW(), ?, \'Y\', ?)',
+                    [dataset_id, buyerCid, datasetPrice, txReceipt.transactionHash],
+                    (err, result) => {
+                        if (err) {
+                            console.error('[Purchase] 구매 정보 저장 중 DB 오류:', err);
+                            return reject(new Error('구매 정보 저장 실패. TxHash: ' + txReceipt.transactionHash + ', Error: ' + err.message));
+                        }
+                        console.log('[Purchase] Purchase record created for dataset_id: ' + dataset_id + ', cid: ' + buyerCid);
+                        resolve(result);
+                    }
+                );
+            });
+
+            res.json({ 
+                success: true, 
+                message: "'" + datasetName + "' 데이터셋 구매가 완료되었습니다.",
+                transactionHash: txReceipt.transactionHash 
+            });
+
+        } catch (error) {
+            console.error('[Purchase] 전체 구매 처리 중 오류:', error);
+            res.status(500).json({ success: false, message: error.message || '구매 처리 중 알 수 없는 오류가 발생했습니다.' });
+        }
+    },
+
+    // 판매 가능한 데이터셋 목록 조회
+    get_datasets: (req, res) => {
+        console.log('label.get_datasets backend called');
+        if (!db || typeof db.query !== 'function') {
+            console.error('Database module (./lib/db.js) is not available or not a valid db object for get_datasets.');
+            return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
+        }
+        const query = "SELECT dataset_id, name, price, SUBSTRING(content, 1, 50) as content_preview FROM dataset WHERE sale_yn = 'Y' ORDER BY dataset_id DESC";
+        db.query(query, (err, results) => {
+            if (err) {
+                console.error('Error fetching sale datasets list:', err);
+                return res.status(500).json({ success: false, message: '판매 데이터셋 목록 조회 중 오류가 발생했습니다.' });
+            }
+            return res.json({ success: true, data: results });
+        });
+    },
+
+    // 사용자의 구매 이력 조회
+    getPurchases: (req, res) => {
+        console.log('label.getPurchases backend called');
+        if (!req.session.is_logined || !req.session.cid) {
+            return res.status(401).json({ success: false, message: '로그인이 필요합니다.' });
+        }
+
+        const userCid = req.session.cid;
+
+        if (!db || typeof db.query !== 'function') {
+            console.error('Database module is not available for getPurchases.');
+            return res.status(500).json({ success: false, message: '서버 내부 오류: DB 모듈 사용 불가.' });
+        }
+
+        const query = `
+            SELECT 
+                p.purchase_id, 
+                p.dataset_id, 
+                d.name AS dataset_name, 
+                p.date AS purchase_date, 
+                p.price AS purchase_price,
+                p.transaction_hash
+            FROM purchase p
+            JOIN dataset d ON p.dataset_id = d.dataset_id
+            WHERE p.cid = ? AND p.payYN = 'Y'
+            ORDER BY p.date DESC
+        `;
+
+        db.query(query, [userCid], (err, results) => {
+            if (err) {
+                console.error('Error fetching user purchases for CID: ' + userCid, err);
+                return res.status(500).json({ success: false, message: '구매 이력 조회 중 DB 오류가 발생했습니다.' });
+            }
+            res.json({ success: true, purchases: results });
+        });
     }
 };

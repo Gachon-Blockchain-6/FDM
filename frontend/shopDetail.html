@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>데이터셋 상세 정보</title>
+  <link rel="stylesheet" href="styles/style.css"> <!-- 공통 스타일 시트 -->
+  <!-- <link rel="stylesheet" href="styles/shopDetail.css"> 만약 shopDetail.html 전용 스타일이 있다면 추가 -->
+</head>
+<body>
+
+  <!-- 공통 헤더 -->
+  <div id="header-container"></div>
+
+  <main class="shop-detail-container">
+    <h2>데이터셋 상세 정보</h2>
+    <div id="dataset-detail-content">
+      <!-- 데이터셋 상세 정보가 여기에 동적으로 채워집니다. -->
+      <p>데이터를 불러오는 중입니다...</p>
+    </div>
+    <button id="purchase-button" style="display: none;">구매하기</button> <!-- 구매하기 버튼 추가, 초기에는 숨김 -->
+    <div id="purchase-status"></div> <!-- 구매 요청 상태 메시지 표시 영역 -->
+    <a href="shop.html">목록으로 돌아가기</a>
+    <button id="download-button" style="display: none;">다운로드하기</button> <!-- 다운로드 버튼 (초기에는 숨김) -->
+  </main>
+
+  <script src="scripts/injectHeader.js"></script>
+  <script src="scripts/shopDetail.js"></script>
+</body>
+</html> 
