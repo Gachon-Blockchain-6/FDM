@@ -91,7 +91,15 @@ services:
     depends_on:
       minio:
         condition: service_healthy # MinIO 서비스가 healthy 상태가 된 후 실행
-    entrypoint: /init/create-bucket.sh
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for /init/create-bucket.sh to be mounted...';
+        while [ ! -f /init/create-bucket.sh ]; do
+          sleep 1;
+        done;
+        echo 'Found /init/create-bucket.sh, executing...';
+        sh /init/create-bucket.sh
+      "
     volumes:
       - ./init:/init # 스크립트가 있는 디렉토리를 컨테이너의 /init으로 마운트
     environment:
