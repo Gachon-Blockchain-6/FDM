@@ -54,3 +54,8 @@
 11:49:43.740816 db@janitor F·5 G·1
 11:49:43.740959 db@janitor removing table-12
 11:49:43.741756 db@open done T·32.927951ms
+12:22:30.643465 table@compaction L0·1 -> L1·1 S·16KiB Q·659
+12:22:30.656932 table@build created L1@19 N·423 S·15KiB "loc..seq,v99":"version,v1"
+12:22:30.657122 version@stat F·[0 1] S·15KiB[0B 15KiB] Sc·[0.00 0.00]
+12:22:30.669280 table@compaction committed F-1 S-1KiB Ke·0 D·57 T·25.640967ms
+12:22:30.670256 table@remove removed @15

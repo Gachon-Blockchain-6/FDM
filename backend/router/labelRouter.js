@@ -48,4 +48,9 @@ router.get('/getPurchases', (req, res) => {
     label.get_purchases(req, res);
 });
 
+// 데이터셋 다운로드
+router.get('/download/:dataset_id', (req, res) => {
+    label.download_dataset(req, res);
+});
+
 module.exports = router;

@@ -232,17 +232,16 @@ module.exports = {
         }
     },
 
-    // 새로운 서비스 함수: 특정 데이터셋의 모든 상세 정보 조회
+    // 새로운 서비스 함수: 특정 데이터셋의 모든 상세 정보 조회 (콜백 스타일)
     get_dataset_all_details: (req, res) => {
-        console.log('label.get_dataset_all_details backend called');
+        console.log('label.get_dataset_all_details');
         const { datasetid } = req.params;
-        const userCid = req.session.cid; // 현재 로그인한 사용자의 cid
+        const userCid = req.session.cid;
 
         if (!db || typeof db.query !== 'function') {
-            console.error('Database module (./lib/db.js) is not available or not a valid db object for get_dataset_all_details.');
+            console.error('Database module (./lib/db.js) is not available for get_dataset_all_details.');
             return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
         }
-
         if (!datasetid) {
             return res.status(400).json({ success: false, message: 'datasetid 파라미터가 필요합니다.' });
         }
@@ -256,22 +255,16 @@ module.exports = {
             if (results.length === 0) {
                 return res.status(404).json({ success: false, message: '해당 ID의 데이터셋을 찾을 수 없습니다.' });
             }
-            
             const datasetData = results[0];
-            
             if (!req.session.is_logined || !userCid) {
-                // 로그인하지 않은 경우, 구매 여부 확인 없이 데이터셋 정보만 반환
                 return res.json({ success: true, data: { ...datasetData, isPurchased: false } });
             }
-
-            // 로그인한 경우, 구매 여부 확인
             const purchaseQuery = 'SELECT COUNT(*) AS purchase_count FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'';
             db.query(purchaseQuery, [datasetid, userCid], (purchaseErr, purchaseResults) => {
                 if (purchaseErr) {
                     console.error('Error checking purchase status for dataset ID: ' + datasetid + ' and user CID: ' + userCid, purchaseErr);
-                    return res.status(500).json({ success: false, message: '구매 정보 확인 중 오류가 발생했습니다.' });
+                    return res.json({ success: true, data: { ...datasetData, isPurchased: false, purchaseCheckError: true } });
                 }
-                
                 const isPurchased = purchaseResults[0].purchase_count > 0;
                 return res.json({ success: true, data: { ...datasetData, isPurchased } });
             });
@@ -622,13 +615,12 @@ module.exports = {
         }
     },
 
-    // 데이터셋 구매 (Async/Await 버전)
-    purchase: async (req, res) => {
-        console.log('label.purchase backend called');
+    // 데이터셋 구매 (DB호출은 콜백, Web3는 Promise chain)
+    purchase: (req, res) => {
+        console.log('label.purchase');
         if (!req.session.is_logined || !req.session.loginid || !req.session.cid) {
             return res.status(401).json({ success: false, message: '로그인이 필요합니다.' });
         }
-
         const buyerLoginId = req.session.loginid;
         const buyerCid = req.session.cid;
         const { dataset_id } = req.body;
@@ -636,112 +628,92 @@ module.exports = {
         if (!dataset_id) {
             return res.status(400).json({ success: false, message: '데이터셋 ID가 필요합니다.' });
         }
-
         if (!db || typeof db.query !== 'function') {
             console.error('Database module is not available for purchase.');
             return res.status(500).json({ success: false, message: '서버 내부 오류: DB 모듈 사용 불가.' });
         }
 
-        try {
-            // 1. 데이터셋 정보 조회 (가격, 판매여부, 이름)
-            const datasetInfo = await new Promise((resolve, reject) => {
-                db.query('SELECT name, price, sale_yn FROM dataset WHERE dataset_id = ?', [dataset_id], (err, results) => {
-                    if (err) return reject(new Error('데이터셋 정보 조회 중 DB 오류: ' + err.message));
-                    if (results.length === 0) return reject(new Error('존재하지 않는 데이터셋입니다.'));
-                    if (results[0].sale_yn !== 'Y') return reject(new Error('현재 판매 중인 데이터셋이 아닙니다.'));
-                    resolve(results[0]);
-                });
-            });
-
+        db.query('SELECT name, price, sale_yn FROM dataset WHERE dataset_id = ?', [dataset_id], (err, datasetResults) => {
+            if (err) {
+                console.error('[Purchase DBError] 데이터셋 정보 조회: ', err);
+                return res.status(500).json({ success: false, message: '데이터셋 정보 조회 중 DB 오류: ' + err.message });
+            }
+            if (datasetResults.length === 0) {
+                return res.status(404).json({ success: false, message: '존재하지 않는 데이터셋입니다.' });
+            }
+            if (datasetResults[0].sale_yn !== 'Y') {
+                return res.status(400).json({ success: false, message: '현재 판매 중인 데이터셋이 아닙니다.' });
+            }
+            const datasetInfo = datasetResults[0];
             const datasetPrice = datasetInfo.price;
             const datasetName = datasetInfo.name;
 
-            // 2. 중복 구매 확인
-            const existingPurchase = await new Promise((resolve, reject) => {
-                db.query('SELECT purchase_id FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'', [dataset_id, buyerCid], (err, results) => {
-                    if (err) return reject(new Error('구매 이력 확인 중 DB 오류: ' + err.message));
-                    resolve(results);
-                });
-            });
-
-            if (existingPurchase.length > 0) {
-                return res.status(400).json({ success: false, message: '이미 구매한 데이터셋입니다.' });
-            }
-
-            // 3. 판매자 정보 조회 (여기서는 'm' 계정으로 고정)
-            const sellerLoginId = 'm';
-
-            // 4. 구매자 잔액 확인 (스마트 컨트랙트)
-            let buyerBalance;
-            try {
-                buyerBalance = await contractInstance.methods.checkBal(buyerLoginId).call();
-                console.log('[Purchase] Buyer (' + buyerLoginId + ') balance: ' + buyerBalance);
-            } catch (smcError) {
-                console.error('[Purchase] 스마트 컨트랙트 잔액 확인 오류 for ' + buyerLoginId + ':', smcError);
-                return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: 사용자 잔액 확인 실패 (' + smcError.message + ')' });
-            }
-            
-            const buyerBalanceBigInt = BigInt(buyerBalance);
-            const datasetPriceBigInt = BigInt(datasetPrice);
-
-            if (buyerBalanceBigInt < datasetPriceBigInt) {
-                return res.status(400).json({ success: false, message: '잔액이 부족합니다. (현재 잔액: ' + buyerBalance + ', 필요 금액: ' + datasetPrice + ')' });
-            }
-
-            // 5. 스마트 컨트랙트 이체 실행
-            let txReceipt;
-            const accounts = await web3.eth.getAccounts();
-            if (!accounts || accounts.length === 0) {
-                console.error('[Purchase] 스마트 컨트랙트 이체 오류: 사용 가능한 Ethereum 계정이 없습니다.');
-                return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: Ethereum 계정 없음.' });
-            }
-            const fromAccount = accounts[0]; 
-
-            try {
-                console.log('[Purchase] Attempting to transfer ' + datasetPrice + ' from ' + buyerLoginId + ' (payer: ' + fromAccount + ') to ' + sellerLoginId);
-                txReceipt = await contractInstance.methods.transBal(buyerLoginId, sellerLoginId, datasetPrice.toString())
-                    .send({ 
-                        from: fromAccount, 
-                        gas: '1000000', 
-                        gasPrice: web3.utils.toWei('10', 'gwei')
-                    });
-                console.log('[Purchase] 스마트 컨트랙트 이체 성공: TxHash ' + txReceipt.transactionHash);
-            } catch (smcError) {
-                console.error('[Purchase] 스마트 컨트랙트 이체 오류 (from: ' + buyerLoginId + ' to ' + sellerLoginId + ', amount: ' + datasetPrice + '):', smcError);
-                return res.status(500).json({ success: false, message: '스마트 컨트랙트 이체 실패: ' + smcError.message });
-            }
-
-            // 6. 구매 테이블에 기록
-            await new Promise((resolve, reject) => {
-                db.query(
-                    'INSERT INTO purchase (dataset_id, cid, date, price, payYN, transaction_hash) VALUES (?, ?, NOW(), ?, \'Y\', ?)',
-                    [dataset_id, buyerCid, datasetPrice, txReceipt.transactionHash],
-                    (err, result) => {
-                        if (err) {
-                            console.error('[Purchase] 구매 정보 저장 중 DB 오류:', err);
-                            return reject(new Error('구매 정보 저장 실패. TxHash: ' + txReceipt.transactionHash + ', Error: ' + err.message));
+            db.query('SELECT purchase_id FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'', [dataset_id, buyerCid], (err, existingPurchaseResults) => {
+                if (err) {
+                    console.error('[Purchase DBError] 구매 이력 확인: ', err);
+                    return res.status(500).json({ success: false, message: '구매 이력 확인 중 DB 오류: ' + err.message });
+                }
+                if (existingPurchaseResults.length > 0) {
+                    return res.status(400).json({ success: false, message: '이미 구매한 데이터셋입니다.' });
+                }
+                const sellerLoginId = 'm';
+                contractInstance.methods.checkBal(buyerLoginId).call()
+                    .then(buyerBalance_str => {
+                        console.log('[Purchase SMC] Buyer (' + buyerLoginId + ') balance: ' + buyerBalance_str);
+                        const buyerBalanceBigInt = BigInt(buyerBalance_str);
+                        const datasetPriceBigInt = BigInt(datasetPrice);
+                        if (buyerBalanceBigInt < datasetPriceBigInt) {
+                            return res.status(400).json({ success: false, message: '잔액이 부족합니다. (현재 잔액: ' + buyerBalance_str + ', 필요 금액: ' + datasetPrice + ')' });
                         }
-                        console.log('[Purchase] Purchase record created for dataset_id: ' + dataset_id + ', cid: ' + buyerCid);
-                        resolve(result);
-                    }
-                );
+                        web3.eth.getAccounts()
+                            .then(accounts => {
+                                if (!accounts || accounts.length === 0) {
+                                    console.error('[Purchase SMC] 이체 오류: 사용 가능한 Ethereum 계정이 없습니다.');
+                                    return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: Ethereum 계정 없음.' });
+                                }
+                                const fromAccount = accounts[0];
+                                console.log('[Purchase SMC] Attempting to transfer ' + datasetPrice + ' from ' + buyerLoginId + ' (payer: ' + fromAccount + ') to ' + sellerLoginId);
+                                return contractInstance.methods.transBal(buyerLoginId, sellerLoginId, datasetPrice.toString())
+                                    .send({ 
+                                        from: fromAccount, 
+                                        gas: '1000000', 
+                                        gasPrice: web3.utils.toWei('10', 'gwei')
+                                    });
+                            })
+                            .then(txReceipt => {
+                                console.log('[Purchase SMC] 이체 성공: TxHash ' + txReceipt.transactionHash);
+                                db.query('INSERT INTO purchase (dataset_id, cid, date, price, payYN, transaction_hash) VALUES (?, ?, NOW(), ?, \'Y\', ?)',
+                                    [dataset_id, buyerCid, datasetPrice, txReceipt.transactionHash],
+                                    (err, insertResult) => {
+                                        if (err) {
+                                            console.error('[Purchase DBError] 구매 정보 저장: ', err);
+                                            return res.status(500).json({ success: false, message: '구매 정보 저장 실패. TxHash: ' + txReceipt.transactionHash + '. 관리자에게 문의하세요.' });
+                                        }
+                                        console.log('[Purchase] Purchase record created for dataset_id: ' + dataset_id + ', cid: ' + buyerCid);
+                                        return res.json({ 
+                                            success: true, 
+                                            message: "'" + datasetName + "' 데이터셋 구매가 완료되었습니다.",
+                                            transactionHash: txReceipt.transactionHash 
+                                        });
+                                    }
+                                );
+                            })
+                            .catch(smcError => { 
+                                console.error('[Purchase SMC] 이체 또는 계정 조회 오류:', smcError);
+                                return res.status(500).json({ success: false, message: '스마트 컨트랙트 처리 실패: ' + smcError.message });
+                            });
+                    })
+                    .catch(smcError => { 
+                        console.error('[Purchase SMC] 잔액 확인 오류 for ' + buyerLoginId + ':', smcError);
+                        return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: 사용자 잔액 확인 실패 (' + smcError.message + ')' });
+                    });
             });
-
-            res.json({ 
-                success: true, 
-                message: "'" + datasetName + "' 데이터셋 구매가 완료되었습니다.",
-                transactionHash: txReceipt.transactionHash 
-            });
-
-        } catch (error) {
-            console.error('[Purchase] 전체 구매 처리 중 오류:', error);
-            res.status(500).json({ success: false, message: error.message || '구매 처리 중 알 수 없는 오류가 발생했습니다.' });
-        }
+        });
     },
 
     // 판매 가능한 데이터셋 목록 조회
     get_datasets: (req, res) => {
-        console.log('label.get_datasets backend called');
+        console.log('label.get_datasets');
         if (!db || typeof db.query !== 'function') {
             console.error('Database module (./lib/db.js) is not available or not a valid db object for get_datasets.');
             return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
@@ -756,20 +728,17 @@ module.exports = {
         });
     },
 
-    // 사용자의 구매 이력 조회
+    // 사용자의 구매 이력 조회 (콜백 스타일로 이미 잘 되어 있음)
     getPurchases: (req, res) => {
-        console.log('label.getPurchases backend called');
+        console.log('label.getPurchases');
         if (!req.session.is_logined || !req.session.cid) {
             return res.status(401).json({ success: false, message: '로그인이 필요합니다.' });
         }
-
         const userCid = req.session.cid;
-
         if (!db || typeof db.query !== 'function') {
             console.error('Database module is not available for getPurchases.');
             return res.status(500).json({ success: false, message: '서버 내부 오류: DB 모듈 사용 불가.' });
         }
-
         const query = `
             SELECT 
                 p.purchase_id, 
@@ -783,13 +752,71 @@ module.exports = {
             WHERE p.cid = ? AND p.payYN = 'Y'
             ORDER BY p.date DESC
         `;
-
         db.query(query, [userCid], (err, results) => {
             if (err) {
                 console.error('Error fetching user purchases for CID: ' + userCid, err);
                 return res.status(500).json({ success: false, message: '구매 이력 조회 중 DB 오류가 발생했습니다.' });
             }
             res.json({ success: true, purchases: results });
+        });
+    },
+
+    // 데이터셋 다운로드 (콜백 스타일로 변경)
+    download_dataset: (req, res) => {
+        console.log('label.download_dataset');
+        const { dataset_id } = req.params;
+        const userCid = req.session.cid;
+        const loginid = req.session.loginid;
+
+        if (!loginid) {
+            return res.status(401).json({ success: false, message: '로그인이 필요합니다.' });
+        }
+        if (!dataset_id) {
+            return res.status(400).json({ success: false, message: '데이터셋 ID가 필요합니다.' });
+        }
+        if (!db || typeof db.query !== 'function') {
+            console.error('Database module is not available for download_dataset.');
+            return res.status(500).json({ success: false, message: '서버 내부 오류: DB 모듈 사용 불가.' });
+        }
+
+        db.query('SELECT COUNT(*) AS count FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'', [dataset_id, userCid], (err, purchaseResults) => {
+            if (err) {
+                console.error('[Download DBError] 구매 이력 확인: ', err);
+                return res.status(500).json({ success: false, message: '구매 이력 확인 중 DB 오류: ' + err.message });
+            }
+            if (!purchaseResults || purchaseResults.length === 0 || purchaseResults[0].count === 0) {
+                return res.status(403).json({ success: false, message: '이 데이터셋을 구매하지 않았거나 구매 기록을 찾을 수 없습니다. 다운로드할 수 없습니다.' });
+            }
+            db.query('SELECT name FROM dataset WHERE dataset_id = ?', [dataset_id], (err, datasetDetailsResults) => {
+                if (err) {
+                    console.error('[Download DBError] 데이터셋 이름 조회: ', err);
+                    return res.status(500).json({ success: false, message: '데이터셋 이름 조회 중 DB 오류: ' + err.message });
+                }
+                if (datasetDetailsResults.length === 0) {
+                    return res.status(404).json({ success: false, message: '데이터셋을 찾을 수 없습니다.' });
+                }
+                const datasetName = datasetDetailsResults[0].name || 'dataset';
+                db.query('SELECT source, finalOption FROM label WHERE dataset_id = ? AND finalOption IS NOT NULL', [dataset_id], (err, labelsResults) => {
+                    if (err) {
+                        console.error('[Download DBError] 라벨 정보 조회: ', err);
+                        return res.status(500).json({ success: false, message: '라벨 정보 조회 중 DB 오류: ' + err.message });
+                    }
+                    if (labelsResults.length === 0) {
+                        return res.status(404).json({ success: false, message: '다운로드할 라벨 데이터가 없습니다 (아직 확정된 라벨이 없거나 데이터셋이 비어있습니다).' });
+                    }
+                    const jsonData = {
+                        dataset_id: parseInt(dataset_id),
+                        dataset_name: datasetName,
+                        labels: labelsResults.map(label => ({
+                            source: label.source,
+                            final_option: label.finalOption
+                        }))
+                    };
+                    const fileName = `${datasetName.replace(/\s+/g, '_')}_${dataset_id}.json`;
+                    res.setHeader('X-Filename', encodeURIComponent(fileName));
+                    return res.status(200).json({ success: true, data: jsonData, fileName: fileName });
+                });
+            });
         });
     }
 };
