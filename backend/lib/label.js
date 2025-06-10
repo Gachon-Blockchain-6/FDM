@@ -1,15 +1,6 @@
-const db = require('./db');
+const db = require('./db'); // db는 이미 다른 곳에서 require 하고 있다면 이 줄은 필요 없을 수 있습니다. 현재 코드에서는 db를 직접 사용하고 있으므로 유지합니다.
 const sanitizeHtml = require('sanitize-html');
-const Web3 = require('web3').default;
 const archiver = require('archiver');
-const path = require('path');
-
-// 스마트 컨트랙트 정보 (사용자 제공)
-const contractAbi = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"datasetId","type":"uint256"},{"indexed":false,"internalType":"string","name":"name","type":"string"},{"indexed":false,"internalType":"uint256","name":"price","type":"uint256"},{"indexed":false,"internalType":"string","name":"meta","type":"string"},{"indexed":false,"internalType":"address","name":"owner","type":"address"}],"name":"DatasetUploaded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"from","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"to","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"GachonCoinTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"cid","type":"uint256"},{"indexed":false,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"uint256","name":"balance","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"trust","type":"uint256"}],"name":"UserRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"datasetId","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"cid","type":"uint256"},{"indexed":false,"internalType":"string","name":"label","type":"string"},{"indexed":false,"internalType":"uint256","name":"trust","type":"uint256"}],"name":"VoteRecorded","type":"event"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"datasets","outputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"string","name":"meta","type":"string"},{"internalType":"address","name":"owner","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"}],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"}],"name":"getUserTrust","outputs":[{"internalType":"uint256","name":"trust","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"}],"name":"getVotes","outputs":[{"internalType":"uint256[]","name":"cids","type":"uint256[]"},{"internalType":"string[]","name":"labels","type":"string[]"},{"internalType":"uint256[]","name":"trusts","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"string","name":"meta","type":"string"}],"name":"recordDataset","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"},{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"string","name":"label","type":"string"},{"internalType":"uint256","name":"trust","type":"uint256"}],"name":"recordVote","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"address","name":"wallet","type":"address"},{"internalType":"uint256","name":"initialBalance","type":"uint256"},{"internalType":"uint256","name":"trust","type":"uint256"}],"name":"registerUser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"rewardUser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"serverWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_serverWallet","type":"address"}],"name":"setServerWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"address","name":"wallet","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferToServer","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"users","outputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"address","name":"wallet","type":"address"},{"internalType":"uint256","name":"balance","type":"uint256"},{"internalType":"uint256","name":"trust","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"votes","outputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"string","name":"label","type":"string"},{"internalType":"uint256","name":"trust","type":"uint256"}],"stateMutability":"view","type":"function"}];
-
-const contractAddress = '0xfa5063c527b052357496c75bf0b364687f07b46b'; // 사용자 제공 주소
-const web3 = new Web3('http://127.0.0.1:8545'); // 사용자 제공 URL
-const contractInstance = new web3.eth.Contract(contractAbi, contractAddress);
 
 // Helper function for updating user grades within a transaction
 function updateUserGrade(connection, loginid, increase, callback) {
@@ -229,39 +220,56 @@ module.exports = {
 
     // 새로운 서비스 함수: 특정 데이터셋의 모든 상세 정보 조회 (콜백 스타일)
     get_dataset_all_details: (req, res) => {
-        console.log('label.get_dataset_all_details');
+        console.log('[GET_DATASET_ALL_DETAILS] Initiating. Path params:', req.params);
         const { datasetid } = req.params;
         const userCid = req.session.cid;
+        const isLogined = req.session.is_logined;
+
+        console.log(`[GET_DATASET_ALL_DETAILS] For datasetid: ${datasetid}, User CID from session: ${userCid}, Is Logined: ${isLogined}, Session ID: ${req.sessionID}`);
 
         if (!db || typeof db.query !== 'function') {
-            console.error('Database module (./lib/db.js) is not available for get_dataset_all_details.');
+            console.error('[GET_DATASET_ALL_DETAILS] Database module (./lib/db.js) is not available.');
             return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
         }
         if (!datasetid) {
+            console.warn('[GET_DATASET_ALL_DETAILS] datasetid parameter is missing.');
             return res.status(400).json({ success: false, message: 'datasetid 파라미터가 필요합니다.' });
         }
 
         const datasetQuery = 'SELECT * FROM dataset WHERE dataset_id = ?';
         db.query(datasetQuery, [datasetid], (err, results) => {
             if (err) {
-                console.error('Error fetching all dataset details for ID: ' + datasetid, err);
+                console.error(`[GET_DATASET_ALL_DETAILS] DB Error fetching dataset details for ID: ${datasetid}`, err);
                 return res.status(500).json({ success: false, message: '데이터베이스 조회 중 오류가 발생했습니다. (dataset)' });
             }
             if (results.length === 0) {
+                console.warn(`[GET_DATASET_ALL_DETAILS] Dataset not found for ID: ${datasetid}`);
                 return res.status(404).json({ success: false, message: '해당 ID의 데이터셋을 찾을 수 없습니다.' });
             }
             const datasetData = results[0];
-            if (!req.session.is_logined || !userCid) {
+
+            if (!isLogined || !userCid) {
+                console.log(`[GET_DATASET_ALL_DETAILS] User not logged in or CID missing. Setting isPurchased to false. isLogined: ${isLogined}, userCid: ${userCid}, Session ID: ${req.sessionID}`);
                 return res.json({ success: true, data: { ...datasetData, isPurchased: false } });
             }
+
             const purchaseQuery = 'SELECT COUNT(*) AS purchase_count FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'';
             db.query(purchaseQuery, [datasetid, userCid], (purchaseErr, purchaseResults) => {
                 if (purchaseErr) {
-                    console.error('Error checking purchase status for dataset ID: ' + datasetid + ' and user CID: ' + userCid, purchaseErr);
-                    return res.json({ success: true, data: { ...datasetData, isPurchased: false, purchaseCheckError: true } });
+                    console.error(`[GET_DATASET_ALL_DETAILS] DB Error fetching purchase status for dataset: ${datasetid}, user: ${userCid}`, purchaseErr);
+                    return res.status(500).json({ success: false, message: '구매 이력 확인 중 데이터베이스 오류가 발생했습니다.' });
                 }
-                const isPurchased = purchaseResults[0].purchase_count > 0;
-                return res.json({ success: true, data: { ...datasetData, isPurchased } });
+                
+                if (!purchaseResults || purchaseResults.length === 0) {
+                    // 이 경우는 COUNT(*) 쿼리에서는 발생하기 어렵지만, 방어적으로 추가합니다.
+                    console.warn(`[GET_DATASET_ALL_DETAILS] Purchase query returned no results array (or empty) for dataset: ${datasetid}, user: ${userCid}. Assuming not purchased.`);
+                    return res.json({ success: true, data: { ...datasetData, isPurchased: false } });
+                }
+
+                const purchaseCount = purchaseResults[0].purchase_count;
+                const isPurchased = purchaseCount > 0;
+                console.log(`[GET_DATASET_ALL_DETAILS] Purchase count for dataset: ${datasetid}, user: ${userCid} is ${purchaseCount}. isPurchased set to: ${isPurchased}`);
+                res.json({ success: true, data: { ...datasetData, isPurchased: isPurchased } });
             });
         });
     },
@@ -420,7 +428,7 @@ module.exports = {
              return mainCallback(err);
         }
 
-        const VOTE_THRESHOLD = 1; // 최소 투표 수 (기존 로직 유지)
+        const VOTE_THRESHOLD = 3; // 최소 투표 수 (기존 로직 유지)
         const connection = db; // db 모듈을 connection으로 사용
 
         connection.beginTransaction(transactionError => {
@@ -777,7 +785,7 @@ module.exports = {
                 return res.status(403).json({ success: false, message: '이 데이터셋을 구매하지 않았습니다. 다운로드할 수 없습니다.' });
             }
 
-            db.query('SELECT name FROM dataset WHERE dataset_id = ?', [datasetid], (datasetErr, datasetDetailsResults) => {
+            db.query('SELECT name FROM dataset WHERE dataset_id = ?', [datasetid], async (datasetErr, datasetDetailsResults) => {
                 if (datasetErr || datasetDetailsResults.length === 0) {
                     console.error('[LABEL_DOWNLOAD_PACKAGE] DB Error fetching dataset name:', datasetErr);
                     return res.status(datasetErr ? 500 : 404).json({ success: false, message: datasetErr ? '데이터셋 정보 조회 중 DB 오류.' : '데이터셋을 찾을 수 없습니다.' });
@@ -785,38 +793,69 @@ module.exports = {
                 const datasetName = datasetDetailsResults[0].name || 'dataset';
                 const archiveFileName = `${datasetName.replace(/\s+/g, '_')}_${datasetid}_package.zip`;
 
-                db.query('SELECT source, finalOption FROM label WHERE dataset_id = ? AND finalOption IS NOT NULL AND source IS NOT NULL AND source != \'\'',
-                    [datasetid], async (labelErr, labelsResults) => {
+                db.query('SELECT label_id, source, finalOption FROM label WHERE dataset_id = ? AND finalOption IS NOT NULL AND source IS NOT NULL AND source != \'\'',
+                    [datasetid], async (labelErr, labelsFromDb) => {
                     if (labelErr) {
                         console.error('[LABEL_DOWNLOAD_PACKAGE] DB Error fetching label info:', labelErr);
                         return res.status(500).json({ success: false, message: '라벨 정보 조회 중 DB 오류가 발생했습니다.' });
                     }
-                    if (labelsResults.length === 0) {
+                    if (labelsFromDb.length === 0) {
                         return res.status(404).json({ success: false, message: '다운로드할 확정된 라벨 데이터가 없습니다 (이미지 또는 최종 라벨 누락).' });
                     }
 
+                    // 2. 스마트 컨트랙트에서 전체 투표 정보 가져오기
+                    const contractInstance = req.app.get('contractInstance'); // req.app으로부터 contractInstance를 가져와 지역 변수에 할당
+                    let contractVotesData = null;
+                    
+                    // 이제 지역 변수 contractInstance를 사용합니다.
+                    if (contractInstance) { 
+                        try {
+                            console.log(`[LABEL_DOWNLOAD_PACKAGE] Calling getVotes(${datasetid}) on smart contract using instance from app with address: ${contractInstance.options.address}`);
+                            const votesResult = await contractInstance.methods.getVotes(datasetid).call();
+                            // votesResult는 { cids: [], labels: [], trusts: [] } 형태일 것으로 예상
+                            // 이를 좀 더 사용하기 쉬운 객체 배열로 변환
+                            contractVotesData = [];
+                            if (votesResult && votesResult.cids && votesResult.cids.length > 0) {
+                                for (let i = 0; i < votesResult.cids.length; i++) {
+                                    contractVotesData.push({
+                                        cid: votesResult.cids[i].toString(), // BigNumber일 수 있으므로 toString()
+                                        label: votesResult.labels[i],
+                                        trust: votesResult.trusts[i].toString() // BigNumber일 수 있으므로 toString()
+                                    });
+                                }
+                            }
+                            console.log(`[LABEL_DOWNLOAD_PACKAGE] Successfully fetched votes from contract for dataset ${datasetid}. Count: ${contractVotesData.length}`);
+                        } catch (contractError) {
+                            console.error(`[LABEL_DOWNLOAD_PACKAGE] Error fetching votes from smart contract for dataset ${datasetid}:`, contractError);
+                            // 컨트랙트 오류가 발생해도 JSON 생성은 계속 진행하되, 이 필드는 누락될 수 있음을 고려
+                        }
+                    } else {
+                        console.warn('[LABEL_DOWNLOAD_PACKAGE] Smart contract instance (from app.get) not found. Skipping fetching votes from contract.');
+                    }
+                    
+                    // 3. jsonData 구성
                     const jsonData = {
                         dataset_id: parseInt(datasetid),
                         dataset_name: datasetName,
-                        labels: labelsResults.map(label => ({
-                            image_filename_in_zip: label.source, // MinIO 객체 이름이 ZIP 내 images 폴더 하위의 파일명이 됨
+                        labels_from_db: labelsFromDb.map(label => ({ // 기존 labels -> labels_from_db 로 명칭 변경
+                            label_id_from_db: label.label_id,
+                            image_filename_in_zip: label.source, 
                             original_minio_object_name: label.source,
-                            final_label: label.finalOption
-                        }))
+                            final_label_from_db: label.finalOption
+                        })),
+                        dataset_all_votes_from_contract: contractVotesData // 스마트 컨트랙트 결과 추가
                     };
 
                     res.setHeader('Content-Type', 'application/zip');
-                    res.setHeader('Content-Disposition', `attachment; filename="${archiveFileName}"`); // 파일명에 큰따옴표 추가 (공백 등 처리)
+                    res.setHeader('Content-Disposition', `attachment; filename="${archiveFileName}"`);
                     
                     const archive = archiver('zip', { zlib: { level: 9 } });
                     archive.on('warning', (warnErr) => {
                         console.warn('[ARCHIVER_WARNING]', warnErr);
                         if (!res.headersSent) {
                            // 안전하게 헤더 전송 전이면 오류 응답 시도
-                           // res.status(500).json({ success: false, message: 'ZIP 아카이브 생성 중 경고 발생: ' + warnErr.message });
-                        } else if (warnErr.code !== 'ENOENT') { // ENOENT는 파일 못찾는 경우로, 아래에서 개별 처리 가능성
-                           // 이미 헤더가 전송된 경우, 스트림을 종료하려고 시도할 수 있지만 안정적이지 않을 수 있음
-                           // archive.abort(); 
+                        } else if (warnErr.code !== 'ENOENT') { 
+                           // 이미 헤더가 전송된 경우, 스트림을 종료하려고 시도
                         }
                     });
                     archive.on('error', (archiveErr) => {
@@ -824,7 +863,6 @@ module.exports = {
                         if (!res.headersSent) {
                             res.status(500).json({ success: false, message: 'ZIP 아카이브 생성 중 심각한 오류 발생: ' + archiveErr.message });
                         } else {
-                            // 이미 응답이 시작된 경우, 에러를 로깅하고 연결을 종료
                             console.error('Headers already sent, cannot send error status for archiver error. Ending response.');
                             res.end();
                         }
@@ -833,19 +871,18 @@ module.exports = {
 
                     archive.append(JSON.stringify(jsonData, null, 2), { name: 'labels_data.json' });
 
-                    const imagePromises = labelsResults.map(label => {
+                    // 4. 이미지 스트리밍 (labelsFromDb 사용)
+                    const imagePromises = labelsFromDb.map(label => { // labelsResults -> labelsFromDb
                         return new Promise((resolve, reject) => {
                             const minioObjectName = label.source;
                             if (!minioObjectName) {
                                 console.warn(`[LABEL_DOWNLOAD_PACKAGE] Skipping label with empty source for dataset ${datasetid}`);
-                                return resolve(); // 소스 정보 없으면 건너뜀 (이미 위에서 필터링했지만, 안전장치)
+                                return resolve(); 
                             }
                             console.log(`[LABEL_DOWNLOAD_PACKAGE] Attempting to stream from MinIO: ${minioBucketName}/${minioObjectName}`);
                             minioClient.getObject(minioBucketName, minioObjectName, (streamErr, dataStream) => {
                                 if (streamErr) {
                                     console.error(`[LABEL_DOWNLOAD_PACKAGE] MinIO getObject error for ${minioBucketName}/${minioObjectName}:`, streamErr);
-                                    // 특정 파일 오류 시 전체 중단 대신 경고만 남기고 계속 진행 (resolve로 처리)
-                                    // 이렇게 하면 일부 이미지가 누락된 ZIP 파일이 생성될 수 있음. 정책에 따라 reject(streamErr)로 변경 가능.
                                     return resolve({ objectName: minioObjectName, status: 'failed', error: streamErr.message });
                                 }
                                 archive.append(dataStream, { name: `images/${minioObjectName}` });
@@ -856,7 +893,7 @@ module.exports = {
                                 });
                                 dataStream.on('error', (dsErr) => {
                                     console.error(`[LABEL_DOWNLOAD_PACKAGE] Error streaming ${minioObjectName} from MinIO to ZIP:`, dsErr);
-                                    resolve({ objectName: minioObjectName, status: 'failed', error: dsErr.message }); // 스트림 오류도 resolve로 넘겨 전체 중단 방지
+                                    resolve({ objectName: minioObjectName, status: 'failed', error: dsErr.message }); 
                                 });
                             });
                         });
@@ -867,7 +904,6 @@ module.exports = {
                         const failedImages = results.filter(r => r && r.status === 'failed');
                         if (failedImages.length > 0) {
                             console.warn(`[LABEL_DOWNLOAD_PACKAGE] Some images failed to stream from MinIO:`, failedImages);
-                            // 실패한 이미지가 있어도 ZIP 파일은 생성될 수 있도록 함. 필요시 여기서 오류 처리.
                         }
                         console.log('[LABEL_DOWNLOAD_PACKAGE] All image streaming attempts finished. Finalizing archive.');
                         await archive.finalize();
@@ -881,8 +917,8 @@ module.exports = {
                             res.end();
                         }
                     }
-                });
-            });
-        });
+                }); // End of DB query for labelsFromDb
+            }); // End of DB query for datasetName
+        }); // End of DB query for purchase check
     }
 };

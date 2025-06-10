@@ -31,7 +31,7 @@ const app = express();
 
 
 const GETH_RPC_URL = process.env.GETH_RPC_URL || 'http://geth-node1:8545'; // docker-compose.yaml의 geth-node1 서비스 사용
-const DEPLOYER_ACCOUNT_ADDRESS = "0x03c11379de6df7465227492e26a0c958106804c8" // geth-node1 hardcoding
+const DEPLOYER_ACCOUNT_ADDRESS = "0x1826616a28fa28d4eab4789f77a62052457ad288" // geth-node1 hardcoding
 const DEPLOYER_ACCOUNT_PASSWORD ="3238"; // 비밀번호가 없다면 빈 문자열
 
 
