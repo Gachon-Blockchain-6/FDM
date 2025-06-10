@@ -1,42 +1,11 @@
 const db = require('./db');
 const sanitizeHtml = require('sanitize-html');
 const Web3 = require('web3').default;
+const archiver = require('archiver');
+const path = require('path');
 
 // 스마트 컨트랙트 정보 (사용자 제공)
-const contractAbi = [
-    {
-        "inputs": [
-            { "internalType": "string", "name": "_name", "type": "string" },
-            { "internalType": "uint256", "name": "_bal", "type": "uint256" }
-        ],
-        "name": "regUser",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            { "internalType": "string", "name": "_from", "type": "string" },
-            { "internalType": "string", "name": "_to", "type": "string" },
-            { "internalType": "uint256", "name": "_amount", "type": "uint256" }
-        ],
-        "name": "transBal",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            { "internalType": "string", "name": "_name", "type": "string" }
-        ],
-        "name": "checkBal",
-        "outputs": [
-            { "internalType": "uint256", "name": "", "type": "uint256" }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-];
+const contractAbi = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"datasetId","type":"uint256"},{"indexed":false,"internalType":"string","name":"name","type":"string"},{"indexed":false,"internalType":"uint256","name":"price","type":"uint256"},{"indexed":false,"internalType":"string","name":"meta","type":"string"},{"indexed":false,"internalType":"address","name":"owner","type":"address"}],"name":"DatasetUploaded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"from","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"to","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"GachonCoinTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"cid","type":"uint256"},{"indexed":false,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"uint256","name":"balance","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"trust","type":"uint256"}],"name":"UserRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"datasetId","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"cid","type":"uint256"},{"indexed":false,"internalType":"string","name":"label","type":"string"},{"indexed":false,"internalType":"uint256","name":"trust","type":"uint256"}],"name":"VoteRecorded","type":"event"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"datasets","outputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"string","name":"meta","type":"string"},{"internalType":"address","name":"owner","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"}],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"}],"name":"getUserTrust","outputs":[{"internalType":"uint256","name":"trust","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"}],"name":"getVotes","outputs":[{"internalType":"uint256[]","name":"cids","type":"uint256[]"},{"internalType":"string[]","name":"labels","type":"string[]"},{"internalType":"uint256[]","name":"trusts","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"string","name":"meta","type":"string"}],"name":"recordDataset","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"datasetId","type":"uint256"},{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"string","name":"label","type":"string"},{"internalType":"uint256","name":"trust","type":"uint256"}],"name":"recordVote","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"address","name":"wallet","type":"address"},{"internalType":"uint256","name":"initialBalance","type":"uint256"},{"internalType":"uint256","name":"trust","type":"uint256"}],"name":"registerUser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"rewardUser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"serverWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_serverWallet","type":"address"}],"name":"setServerWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"address","name":"wallet","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferToServer","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"users","outputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"address","name":"wallet","type":"address"},{"internalType":"uint256","name":"balance","type":"uint256"},{"internalType":"uint256","name":"trust","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"votes","outputs":[{"internalType":"uint256","name":"cid","type":"uint256"},{"internalType":"string","name":"label","type":"string"},{"internalType":"uint256","name":"trust","type":"uint256"}],"stateMutability":"view","type":"function"}];
 
 const contractAddress = '0xfa5063c527b052357496c75bf0b364687f07b46b'; // 사용자 제공 주소
 const web3 = new Web3('http://127.0.0.1:8545'); // 사용자 제공 URL
@@ -137,10 +106,36 @@ function updateVotesAndGradesCallback(connection, finalLabelText, labelId, voteD
     });
 }
 
+// 등급을 신뢰도 점수로 변환하는 헬퍼 함수 (auth.js와 유사하게)
+const gradeToTrustScore = (grade) => {
+    if (grade === 'S') return 100;
+    if (grade === 'A') return 90;
+    if (grade === 'B') return 70;
+    if (grade === 'C') return 50;
+    if (grade === 'D') return 40;
+    if (grade === 'E') return 30;
+    if (grade === 'F') return 20;
+    return 60; // 기본값 또는 CST, proxy 등 기타 등급
+};
+
+// 신뢰도 점수를 등급 문자열로 변환하는 헬퍼 함수
+const trustToLevel = (trustScore) => {
+    // FdmDatasetRegistry.sol의 User.trust는 0-100 범위의 신뢰도입니다.
+    // gradeToTrustScore 함수의 역매핑 또는 유사한 기준으로 정의합니다.
+    if (trustScore >= 95) return 'S'; 
+    if (trustScore >= 90) return 'A'; // gradeToTrustScore('A') === 90
+    if (trustScore >= 70) return 'B'; // gradeToTrustScore('B') === 70
+    if (trustScore >= 50) return 'C'; // gradeToTrustScore('C') === 50
+    if (trustScore >= 40) return 'D'; // gradeToTrustScore('D') === 40
+    if (trustScore >= 30) return 'E'; // gradeToTrustScore('E') === 30
+    if (trustScore >= 0) return 'F';  // gradeToTrustScore('F') === 20 (최저 등급으로 간주)
+    return 'N/A'; // 알 수 없거나 유효하지 않은 신뢰도
+};
+
 module.exports = {
     // 라벨링 데이터가 포함될 데이터셋을 생성합니다. (관리자용)
     create_dataset: (req, res) => {
-        console.log('label.create_dataset invoked');
+        console.log('label.create_dataset');
         if (!db || typeof db.query !== 'function') {
              console.error('Database module (./lib/db.js) is not available or not a valid db object for create_dataset.');
              return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
@@ -272,7 +267,7 @@ module.exports = {
     },
 
     labelinfo: (req, res) => {
-        console.log('label.labelinfo invoked');
+        console.log('label.labelinfo');
         if (!req.session.is_logined) {
             return res.status(401).json({ success: false, message: '로그인이 필요합니다. 라벨 정보에 접근하려면 먼저 로그인해주세요.' });
         }
@@ -306,7 +301,7 @@ module.exports = {
 
     // 특정 데이터셋에 속한 모든 옵션 정보를 가져옵니다.
     get_dataset_options: (req, res) => {
-        console.log('label.get_dataset_options invoked');
+        console.log('label.get_dataset_options');
         if (!db || typeof db.query !== 'function') {
              console.error('Database module (./lib/db.js) is not available or not a valid db object for get_dataset_options.');
              return res.status(500).json({ success: false, message: '서버 내부 오류: 데이터베이스 모듈을 사용할 수 없습니다.' });
@@ -383,12 +378,13 @@ module.exports = {
                             });
                         }
                         const datasetIdForClosure = labelMeta[0].dataset_id;
-                        module.exports.close_voting(datasetIdForClosure, label_id, (closeError) => {
+                        // req.app을 close_voting의 세 번째 인자로 전달 (datasetId, labelId, app, callback 순서)
+                        module.exports.close_voting(datasetIdForClosure, label_id, req.app, (closeError) => {
                             if (closeError) {
                                 console.error('Error during closing process after vote submission:', closeError);
                                 return res.status(500).json({
                                     success: false,
-                                    message: '투표(ID: ' + voteInsertId + ')는 기록되었으나, 후속 집계 처리 중 오류: ' + closeError.message
+                                    message: '투표(ID: ' + voteInsertId + ')는 기록되었으나, 후속 집계 처리 중 오류: ' + (closeError.message || 'Unknown error')
                                 });
                             }
                             res.status(200).json({
@@ -403,47 +399,79 @@ module.exports = {
         });
     },
 
-    // 투표를 종료하고 라벨링 결과를 블록체인에 기록합니다.
-    close_voting: (datasetId, labelId, mainCallback) => {
-        console.log('close_voting called for datasetId: ' + datasetId + ', labelId: ' + labelId);
+    // 투표를 종료하고, 각 투표 내역을 블록체인에 기록합니다.
+    // app 객체를 인자로 받아 web3, contractInstance, deployerAccountAddress를 사용합니다.
+    close_voting: async (datasetId, labelId, app, mainCallback) => {
+        console.log(`[LABEL_CLOSE_VOTING] Called for datasetId: ${datasetId}, labelId: ${labelId}`);
+
+        const web3 = app.get('web3');
+        const contractInstance = app.get('contractInstance');
+        const deployerAccountAddress = app.get('deployerAccountAddress');
+
+        if (!web3 || !contractInstance || !deployerAccountAddress) {
+            console.error('[LABEL_CLOSE_VOTING] Web3, 계약 인스턴스 또는 배포자 계정 주소를 app 객체에서 찾을 수 없습니다.');
+            const err = new Error('서버 내부 설정 오류: 블록체인 연동 설정을 찾을 수 없습니다.');
+            return mainCallback(err);
+        }
+
         if (!db || typeof db.query !== 'function' || typeof db.beginTransaction !== 'function') {
-             console.error('Database module (./lib/db.js) is not available or not a valid db object with transaction support for close_voting.');
-             const err = new Error('서버 내부 오류: 데이터베이스 모듈을 사용할 수 없거나 트랜잭션을 지원하지 않습니다.');
+             console.error('[LABEL_CLOSE_VOTING] DB 모듈 오류: 트랜잭션을 지원하지 않거나 사용할 수 없습니다.');
+             const err = new Error('서버 내부 오류: 데이터베이스 모듈 오류.');
              return mainCallback(err);
         }
-        const VOTE_THRESHOLD = 3;
-        const connection = db;
+
+        const VOTE_THRESHOLD = 1; // 최소 투표 수 (기존 로직 유지)
+        const connection = db; // db 모듈을 connection으로 사용
+
         connection.beginTransaction(transactionError => {
             if (transactionError) {
-                console.error('Error beginning transaction for label ' + labelId + ':', transactionError);
+                console.error(`[LABEL_CLOSE_VOTING] DB 트랜잭션 시작 오류 (labelId: ${labelId}):`, transactionError);
                 return mainCallback(transactionError);
             }
+
             connection.query('SELECT onchainYn FROM label WHERE label_id = ?', [labelId], (error, labelStatus) => {
                 if (error) {
-                    console.error('DB Error checking onchainYn for label ' + labelId + ':', error);
+                    console.error(`[LABEL_CLOSE_VOTING] DB 오류 (onchainYn 확인, labelId: ${labelId}):`, error);
                     return connection.rollback(() => mainCallback(error));
                 }
                 if (labelStatus && labelStatus.length > 0 && labelStatus[0].onchainYn === 'Y') {
-                    console.log('Label ' + labelId + ' is already processed and onchain. Skipping.');
-                    return connection.commit(commitErr => mainCallback(commitErr));
+                    console.log(`[LABEL_CLOSE_VOTING] Label ${labelId}는 이미 블록체인에 기록되었습니다. 건너<0xEB><0x95><0xB5>니다.`);
+                    // 이미 처리된 경우, 트랜잭션 커밋하고 성공 콜백 (롤백하면 다른 작업에 영향 줄 수 있으므로 커밋)
+                    return connection.commit(commitErr => {
+                        if (commitErr) {
+                            console.error(`[LABEL_CLOSE_VOTING] 이미 처리된 labelId ${labelId}의 트랜잭션 커밋 오류:`, commitErr);
+                            return mainCallback(commitErr);
+                        }
+                        mainCallback(null); // 이미 처리되었으므로 성공으로 간주
+                    });
                 }
+
                 connection.query('SELECT COUNT(*) as voteCount FROM vote WHERE label_id = ?', [labelId], (countError, votes) => {
                     if (countError) {
-                        console.error('DB Error counting votes for label ' + labelId + ':', countError);
+                        console.error(`[LABEL_CLOSE_VOTING] DB 오류 (투표 수 확인, labelId: ${labelId}):`, countError);
                         return connection.rollback(() => mainCallback(countError));
                     }
                     const voteCount = votes[0].voteCount;
-                    console.log('Votes for label ' + labelId + ': ' + voteCount);
+                    console.log(`[LABEL_CLOSE_VOTING] Label ${labelId}의 투표 수: ${voteCount}`);
+
                     if (voteCount >= VOTE_THRESHOLD) {
-                        console.log('Threshold met for label ' + labelId + '. Processing finalization.');
+                        console.log(`[LABEL_CLOSE_VOTING] 투표 수 충족 (labelId: ${labelId}). 최종 라벨 처리 시작.`);
                         connection.query(
-                            'SELECT v.content, v.cid, p.grade, p.loginid FROM vote v JOIN person p ON v.cid = p.cid WHERE v.label_id = ?',
+                            'SELECT v.vote_id, v.content, v.cid as user_db_id, p.grade, p.loginid FROM vote v JOIN person p ON v.cid = p.cid WHERE v.label_id = ?',
                             [labelId],
-                            (detailsError, voteDetails) => {
+                            async (detailsError, voteDetails) => { // async 키워드 추가
                                 if (detailsError) {
-                                    console.error('DB Error fetching vote details for label ' + labelId + ':', detailsError);
+                                    console.error(`[LABEL_CLOSE_VOTING] DB 오류 (투표 상세 정보 조회, labelId: ${labelId}):`, detailsError);
                                     return connection.rollback(() => mainCallback(detailsError));
                                 }
+
+                                if (!voteDetails || voteDetails.length === 0) {
+                                    console.log(`[LABEL_CLOSE_VOTING] 투표 내역이 없습니다 (labelId: ${labelId}). 처리를 중단합니다.`);
+                                    // 투표가 없으면 롤백보다는 커밋하고 완료 (오류 상황은 아님)
+                                    return connection.commit(commitErr => mainCallback(commitErr)); 
+                                }
+
+                                // 1. 최종 라벨 결정 (기존 로직 유지)
                                 const gradeWeight = { 'S': 2.0, 'A': 1.5, 'B': 1.2, 'C': 1.0, 'D': 0.8, 'E': 0.5, 'F': 0.2 };
                                 const scores = {};
                                 voteDetails.forEach(vote => {
@@ -458,256 +486,214 @@ module.exports = {
                                     }
                                 }
                                 if (finalLabelText === null && voteDetails && voteDetails.length > 0) {
-                                    finalLabelText = voteDetails[0].content;
+                                    finalLabelText = voteDetails[0].content; // 만약 위 로직으로 결정 안되면 첫번째 투표 내용으로 (기존 로직)
                                 }
+
                                 if (finalLabelText) {
-                                    connection.query('UPDATE label SET finalOption = ? WHERE label_id = ?', [finalLabelText, labelId], (updateError) => {
+                                    connection.query('UPDATE label SET finalOption = ? WHERE label_id = ?', [finalLabelText, labelId], async (updateError) => { // async 키워드 추가
                                         if (updateError) {
-                                            console.error('DB Error updating finalOption for label ' + labelId + ':', updateError);
+                                            console.error(`[LABEL_CLOSE_VOTING] DB 오류 (finalOption 업데이트, labelId: ${labelId}):`, updateError);
                                             return connection.rollback(() => mainCallback(updateError));
                                         }
-                                        console.log('Label ' + labelId + ' updated with finalOption: ' + finalLabelText + '. Now updating grades.');
+                                        console.log(`[LABEL_CLOSE_VOTING] Label ${labelId}의 finalOption 업데이트: ${finalLabelText}. 등급 업데이트 및 블록체인 기록 시작.`);
 
-                                        // Step 1: Update votes and grades based on the finalLabelText
-                                        updateVotesAndGradesCallback(connection, finalLabelText, labelId, voteDetails, (gradeUpdateError) => {
+                                        // 2. 참여자 등급 업데이트 (기존 로직 호출, 콜백 방식)
+                                        updateVotesAndGradesCallback(connection, finalLabelText, labelId, voteDetails, async (gradeUpdateError) => { // async 키워드 추가
                                             if (gradeUpdateError) {
-                                                console.error('DB Error during grade update for label ' + labelId + ':', gradeUpdateError);
+                                                console.error(`[LABEL_CLOSE_VOTING] DB 오류 (등급 업데이트, labelId: ${labelId}):`, gradeUpdateError);
                                                 return connection.rollback(() => mainCallback(gradeUpdateError));
                                             }
-                                            console.log('Grades updated for label ' + labelId + '. Proceeding to blockchain upload.');
+                                            console.log(`[LABEL_CLOSE_VOTING] 등급 업데이트 완료 (labelId: ${labelId}). 개별 투표 블록체인 기록 시작.`);
 
-                                            // Step 2: Fetch source and upload to blockchain
-                                            connection.query('SELECT source FROM label WHERE label_id = ?', [labelId], (sourceError, labelSourceInfo) => {
-                                                if (sourceError) {
-                                                    console.error('DB Error fetching source for blockchain for label ' + labelId + ':', sourceError);
-                                                    return connection.rollback(() => mainCallback(sourceError));
+                                            // 3. 각 투표를 블록체인의 recordVote로 기록
+                                            let lastTransactionHash = null;
+                                            let successfullyRecordedVotes = 0; // 성공적으로 기록된 투표 수
+                                            try {
+                                                for (const vote of voteDetails) {
+                                                    const cidForContract = vote.user_db_id; // DB의 person.cid를 스마트 계약의 cid로 사용
+                                                    const labelForContract = vote.content;  // 사용자가 투표한 내용
+                                                    const trustForContract = gradeToTrustScore(vote.grade); // 투표 당시 등급을 신뢰도 점수로 변환
+                                                    
+                                                    // 스마트 계약에 사용자가 등록되어 있는지 확인
+                                                    try {
+                                                        const userOnChain = await contractInstance.methods.users(cidForContract).call();
+                                                        if (!userOnChain || userOnChain.wallet === '0x0000000000000000000000000000000000000000') {
+                                                            console.warn(`[BC_RECORD_VOTE_SKIP] 사용자 CID ${cidForContract}은(는) 스마트 계약에 등록되어 있지 않습니다. labelId ${labelId}에 대한 해당 사용자의 투표는 건너뜁니다.`);
+                                                            continue; // 다음 투표로 넘어감
+                                                        }
+                                                    } catch (checkError) {
+                                                        console.error(`[BC_RECORD_VOTE_SKIP] 스마트 계약에서 사용자 CID ${cidForContract}의 등록 상태 확인 중 오류 발생. 해당 투표를 건너뜁니다. 오류: ${checkError.message}`);
+                                                        continue; // 다음 투표로 넘어감
+                                                    }
+
+                                                    console.log(`[BC_RECORD_VOTE] 스마트 계약 recordVote 호출: datasetId=${datasetId}, cid=${cidForContract}, label='${labelForContract}', trust=${trustForContract}`);
+                                                    
+                                                    const currentGasPrice = await web3.eth.getGasPrice();
+                                                    console.log(`[BC_CLOSE_VOTE] Recording vote for dataset ${datasetId}, cid ${cidForContract}. Gas price: ${currentGasPrice}`);
+                                                    const receipt = await contractInstance.methods.recordVote(datasetId, cidForContract, labelForContract, trustForContract).send({
+                                                        from: deployerAccountAddress,
+                                                        gas: '250000', // 충분한 가스 한도
+                                                        gasPrice: currentGasPrice 
+                                                    });
+                                                    console.log(`[BC_CLOSE_VOTE] Vote recorded. Tx hash: ${receipt.transactionHash}`);
+                                                    lastTransactionHash = receipt.transactionHash; // 마지막 성공한 트랜잭션 해시 저장
+                                                    successfullyRecordedVotes++;
                                                 }
-                                                const sourceForBlockchain = labelSourceInfo && labelSourceInfo.length > 0 ? labelSourceInfo[0].source : 'N/A';
-                                                const blockchainPayload = [{ label_id: labelId, finalOption: finalLabelText, source: sourceForBlockchain }];
 
-                                                module.exports.upload_to_blockchain(datasetId, blockchainPayload)
-                                                    .then(blockchainResult => {
-                                                        if (blockchainResult && blockchainResult.success && blockchainResult.hash) {
-                                                            connection.query('UPDATE label SET onchainYn = \'Y\', onchainHash = ? WHERE label_id = ?', [blockchainResult.hash, labelId], (onchainError) => {
+                                                // 모든 개별 투표가 블록체인에 성공적으로 기록된 후, 또는 기록할 투표가 있었던 경우 label 테이블의 onchainYn 업데이트
+                                                if (successfullyRecordedVotes > 0 && lastTransactionHash) {
+                                                    connection.query('UPDATE label SET onchainYn = \'Y\', onchainHash = ? WHERE label_id = ?', [lastTransactionHash, labelId], (onchainError) => {
                                                                 if (onchainError) {
-                                                                    console.error('DB Error marking label onchain ' + labelId + ':', onchainError);
-                                                                    return connection.rollback(() => mainCallback(onchainError));
+                                                            console.error(`[LABEL_CLOSE_VOTING] DB 오류 (onchainYn 업데이트, labelId: ${labelId}):`, onchainError);
+                                                            return connection.rollback(() => mainCallback(onchainError)); // 롤백
                                                                 }
-                                                                console.log('Label ' + labelId + ' marked onchain with hash ' + blockchainResult.hash);
-                                                                connection.commit(commitErr => {
+                                                        console.log(`[LABEL_CLOSE_VOTING] Label ${labelId}의 모든 투표 블록체인 기록 완료 및 onchainYn=\'Y\' 업데이트. (마지막 Tx: ${lastTransactionHash})`);
+                                                        connection.commit(commitErr => { // 모든 작업 성공 후 DB 커밋
                                                                     if (commitErr) {
-                                                                        console.error('DB commit error after successful onchain marking for label ' + labelId + ':', commitErr);
+                                                                console.error(`[LABEL_CLOSE_VOTING] DB 커밋 오류 (labelId: ${labelId}):`, commitErr);
                                                                         return mainCallback(commitErr);
                                                                     }
-                                                                    mainCallback(null); // All successful
+                                                            mainCallback(null); // 모든 과정 최종 성공
                                                                 });
                                                             });
+                                                } else if (voteDetails.length > 0 && successfullyRecordedVotes === 0) {
+                                                    // 투표는 있었으나 (voteDetails.length > 0), 등록된 사용자의 유효한 투표가 없어 아무것도 블록체인에 기록되지 않은 경우
+                                                    console.warn(`[LABEL_CLOSE_VOTING] labelId ${labelId}에 대한 투표가 있었으나, 스마트 계약에 기록할 수 있는 유효한 투표가 없었습니다. onchainYn은 업데이트되지 않습니다.`);
+                                                    connection.commit(commitErr => mainCallback(commitErr)); // DB는 커밋
                                                         } else {
-                                                            // Blockchain upload itself reported failure (e.g., success:false) or no hash returned.
-                                                            // DB changes (finalOption, grade updates) are already part of the transaction.
-                                                            // We commit these DB changes but acknowledge blockchain part failed.
-                                                            const bcLogicalFailureError = new Error('Blockchain upload failed or returned no hash, but database changes (final option, grades) were committed.');
-                                                            console.error('Blockchain upload logical failure for label ' + labelId + ': ' + (blockchainResult ? blockchainResult.error : 'Unknown or no hash from blockchain module'), blockchainResult);
-                                                            connection.commit(commitErr => {
-                                                                if (commitErr) {
-                                                                    console.error('DB commit error after failed blockchain upload for label ' + labelId + ':', commitErr);
-                                                                    // Pass original commit error if commit fails
-                                                                    return mainCallback(commitErr);
-                                                                }
-                                                                // Pass the specific error indicating DB success but BC failure.
-                                                                mainCallback(bcLogicalFailureError);
-                                                            });
-                                                        }
-                                                    })
-                                                    .catch(bcError => { // Promise from upload_to_blockchain was rejected (catastrophic failure)
-                                                        console.error('Blockchain upload promise catastrophically failed for label ' + labelId + ':', bcError);
-                                                        // Rollback all DB changes (finalOption, grade updates) made in this transaction.
-                                                        return connection.rollback(() => mainCallback(bcError));
-                                                    });
-                                            });
+                                                    // 이 경우는 모든 voteDetails 반복문이 (건너뛰기 등으로) 완료되었으나 lastTransactionHash가 없는 경우
+                                                    // (예: 모든 사용자가 미등록이어서 successfullyRecordedVotes가 0이거나, voteDetails 자체가 비어있던 경우 등)
+                                                    // voteDetails가 비어있던 경우는 이미 위에서 처리됨.
+                                                    // 여기는 successfullyRecordedVotes가 0이고 voteDetails도 0이었던 경우 (사실상 발생 어려움) 또는 다른 예외적 상황
+                                                    console.warn(`[LABEL_CLOSE_VOTING] 모든 투표가 처리되었으나 마지막 트랜잭션 해시가 없거나 성공적으로 기록된 투표가 없습니다 (labelId: ${labelId}). DB는 커밋합니다.`);
+                                                    connection.commit(commitErr => mainCallback(commitErr)); // DB는 커밋, 로직 점검 필요
+                                                }
+
+                                            } catch (contractError) {
+                                                // cidForContract 변수는 이 catch 블록의 스코프에 없으므로 로그에서 제거합니다.
+                                                console.error(`[BC_CLOSE_VOTE_ERROR] 스마트 계약 recordVote 호출 실패 (datasetId: ${datasetId}):`, contractError);
+                                                // 개별 투표 기록 실패 시 전체 프로세스를 중단할지, 아니면 로그만 남기고 계속할지 정책 결정 필요
+                                                return connection.rollback(() => mainCallback(contractError));
+                                            }
                                         });
                                     });
                                 } else {
-                                    console.log('Could not determine finalOption for label ' + labelId + '.');
-                                    connection.commit(commitErr => mainCallback(commitErr));
+                                    console.log(`[LABEL_CLOSE_VOTING] 최종 라벨을 결정할 수 없습니다 (labelId: ${labelId}). DB는 커밋합니다.`);
+                                    connection.commit(commitErr => mainCallback(commitErr)); // 최종 라벨 결정 못해도 DB는 커밋 (기존 로직 유지)
                                 }
                             }
                         );
                     } else {
-                        console.log('Threshold not met for label ' + labelId + '. Current votes: ' + voteCount + '. No action taken.');
-                        connection.commit(commitErr => mainCallback(commitErr));
+                        console.log(`[LABEL_CLOSE_VOTING] 투표 수가 임계값(${VOTE_THRESHOLD}) 미만입니다 (labelId: ${labelId}). 처리하지 않습니다.`);
+                        connection.commit(commitErr => mainCallback(commitErr)); // 처리 안해도 DB는 커밋 (기존 로직 유지)
                     }
                 });
             });
         });
     },
 
-    upload_to_blockchain: async (datasetId, finalLabelsArray) => {
-        try {
-            console.log('[블록체인 기록 시작] Dataset ID:', datasetId, 'Labels:', finalLabelsArray);
-            const accounts = await web3.eth.getAccounts();
-            if (!accounts || accounts.length === 0) {
-                console.error('블록체인 기록 중 오류: 사용 가능한 계정이 없습니다.');
-                return { success: false, error: 'No accounts available for transaction.' };
-            }
-            const fromAccount = accounts[0];
-            console.log('Using account for transaction:', fromAccount);
-
-            const transactionReceipts = [];
-
-            for (const labelData of finalLabelsArray) {
-                const labelIdStr = String(labelData.label_id);
-                const nameArg = labelIdStr; // 또는 sourceStr 등 의미있는 문자열
-                const balArg = 0; // finalOption이 숫자라면 parseInt(finalOptionStr) 사용 가능
-
-                console.log(`[블록체인] Sending tx for label: ${nameArg}, value: ${balArg}`);
-
-                try {
-                    const receipt = await contractInstance.methods.regUser(nameArg, balArg).send({ 
-                        from: fromAccount, 
-                        gas: '1000000', // 적절한 가스 한도 설정
-                        gasPrice: web3.utils.toWei('30', 'gwei') // 적절한 가스 가격 설정
-                    });
-                    console.log('[블록체인 기록] TxHash for ' + nameArg + ': ' + receipt.transactionHash);
-                    transactionReceipts.push({ label_id: labelIdStr, transactionHash: receipt.transactionHash, status: true });
-                } catch (txError) {
-                    console.error('블록체인 트랜잭션 오류 for ' + nameArg + ':', txError.message);
-                    transactionReceipts.push({ label_id: labelIdStr, error: txError.message, status: false });
-                    // 하나라도 실패하면 전체 실패로 처리할지, 부분 성공으로 할지 정책 결정 필요
-                    // 여기서는 일단 계속 진행하고 결과에 실패 내역 포함
-                }
-            }
-
-            const allSuccessful = transactionReceipts.every(r => r.status);
-            
-            if (allSuccessful && transactionReceipts.length > 0) {
-                // 모든 트랜잭션이 성공한 경우, 마지막 트랜잭션 해시 또는 모든 해시 배열을 반환할 수 있습니다.
-                // 여기서는 첫번째 성공한 트랜잭션의 해시를 대표로 반환 (단일 해시를 기대하는 경우)
-                // 또는 모든 해시 정보를 담은 객체/배열을 반환할 수도 있습니다.
-                // 기존 로직은 단일 해시를 기대하므로, 첫번째 (또는 마지막) 해시를 반환합니다.
-                 const firstSuccessfulTx = transactionReceipts.find(r => r.status);
-                return { 
-                    success: true, 
-                    hash: firstSuccessfulTx ? firstSuccessfulTx.transactionHash : 'N/A', // 모든 트랜잭션 성공 시 대표 해시
-                    details: transactionReceipts 
-                };
-            } else if (transactionReceipts.some(r => r.status)) {
-                 // 부분 성공
-                const firstSuccessfulTx = transactionReceipts.find(r => r.status);
-                return {
-                    success: false, // 전체 성공은 아니므로 false로 표시하거나, success: 'partial' 등 다른 상태 사용 가능
-                    error: 'Some blockchain transactions failed.',
-                    hash: firstSuccessfulTx ? firstSuccessfulTx.transactionHash : 'N/A', // 성공한 것 중 하나의 해시
-                    details: transactionReceipts
-                };
-            } else {
-                // 모든 트랜잭션 실패
-                return { 
-                    success: false, 
-                    error: 'All blockchain transactions failed.',
-                    details: transactionReceipts
-                };
-            }
-
-        } catch (err) {
-            console.error('블록체인 기록 중 전체 오류:', err);
-            return { success: false, error: err.message || 'Blockchain upload failed' };
-        }
-    },
-
     // 데이터셋 구매 (DB호출은 콜백, Web3는 Promise chain)
-    purchase: (req, res) => {
+    purchase: async (req, res) => {
         console.log('label.purchase');
-        if (!req.session.is_logined || !req.session.loginid || !req.session.cid) {
+        const { dataset_id } = req.body;
+        const loginid = req.session.loginid;
+        const userWalletAddress = req.session.walletAddress; // 구매자 지갑 주소 (로그용으로 유지)
+        const userCid = req.session.userDbId; // DB에 저장된 사용자의 CID (PK)
+
+        if (!req.session.is_logined) {
             return res.status(401).json({ success: false, message: '로그인이 필요합니다.' });
         }
-        const buyerLoginId = req.session.loginid;
-        const buyerCid = req.session.cid;
-        const { dataset_id } = req.body;
-
         if (!dataset_id) {
             return res.status(400).json({ success: false, message: '데이터셋 ID가 필요합니다.' });
         }
-        if (!db || typeof db.query !== 'function') {
-            console.error('Database module is not available for purchase.');
-            return res.status(500).json({ success: false, message: '서버 내부 오류: DB 모듈 사용 불가.' });
+        // userWalletAddress는 이제 from 주소로 사용되지 않지만, 세션에 있는지 확인하는 것은 유효할 수 있습니다.
+        if (!userWalletAddress || !userCid) { 
+            return res.status(400).json({ success: false, message: '사용자 지갑 정보 또는 CID가 세션에 없습니다.' });
         }
 
-        db.query('SELECT name, price, sale_yn FROM dataset WHERE dataset_id = ?', [dataset_id], (err, datasetResults) => {
-            if (err) {
-                console.error('[Purchase DBError] 데이터셋 정보 조회: ', err);
-                return res.status(500).json({ success: false, message: '데이터셋 정보 조회 중 DB 오류: ' + err.message });
-            }
-            if (datasetResults.length === 0) {
-                return res.status(404).json({ success: false, message: '존재하지 않는 데이터셋입니다.' });
-            }
-            if (datasetResults[0].sale_yn !== 'Y') {
-                return res.status(400).json({ success: false, message: '현재 판매 중인 데이터셋이 아닙니다.' });
-            }
-            const datasetInfo = datasetResults[0];
-            const datasetPrice = datasetInfo.price;
-            const datasetName = datasetInfo.name;
+        const web3 = req.app.get('web3');
+        const contractInstance = req.app.get('contractInstance');
+        const deployerAccountAddress = req.app.get('deployerAccountAddress'); // 서버 배포자 주소 가져오기
 
-            db.query('SELECT purchase_id FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'', [dataset_id, buyerCid], (err, existingPurchaseResults) => {
+        if (!web3 || !contractInstance) {
+            console.error('[LABEL_PURCHASE] Web3 또는 계약 인스턴스를 서버 설정에서 찾을 수 없습니다.');
+            return res.status(500).json({ success: false, message: '서버 설정 오류로 구매를 처리할 수 없습니다. (Web3 또는 계약 인스턴스 누락)' });
+        }
+        if (!deployerAccountAddress) {
+            console.error('[LABEL_PURCHASE] Deployer account address not found in app settings.');
+            return res.status(500).json({ success: false, message: '서버 설정 오류로 구매를 처리할 수 없습니다. (배포자 주소 누락)' });
+        }
+
+        db.query('SELECT price, name FROM dataset WHERE dataset_id = ? AND sale_yn = \'Y\'', [dataset_id], async (err, results) => {
                 if (err) {
-                    console.error('[Purchase DBError] 구매 이력 확인: ', err);
-                    return res.status(500).json({ success: false, message: '구매 이력 확인 중 DB 오류: ' + err.message });
+                console.error('DB Error on fetching dataset price for purchase:', err);
+                return res.status(500).json({ success: false, message: '데이터셋 정보 조회 중 오류 발생' });
+            }
+            if (results.length === 0) {
+                return res.status(404).json({ success: false, message: '구매할 수 있는 데이터셋을 찾을 수 없거나 판매 중이 아닙니다.' });
+            }
+            const datasetPrice = results[0].price;
+            const datasetName = results[0].name;
+
+            try {
+                console.log(`[BC_PURCHASE] Attempting to purchase dataset ${dataset_id} for ${datasetPrice} GachonCoin by user cid ${userCid}. Transaction will be sent from server account ${deployerAccountAddress}.`);
+                
+                const balance = await contractInstance.methods.getBalance(userCid).call();
+                console.log(`[BC_PURCHASE] User (cid: ${userCid}) current balance: ${balance} GachonCoin`);
+                if (BigInt(balance) < BigInt(datasetPrice)) {
+                    return res.status(400).json({ success: false, message: '가천코인 잔액이 부족합니다. 현재 잔액: ' + balance });
                 }
-                if (existingPurchaseResults.length > 0) {
-                    return res.status(400).json({ success: false, message: '이미 구매한 데이터셋입니다.' });
-                }
-                const sellerLoginId = 'm';
-                contractInstance.methods.checkBal(buyerLoginId).call()
-                    .then(buyerBalance_str => {
-                        console.log('[Purchase SMC] Buyer (' + buyerLoginId + ') balance: ' + buyerBalance_str);
-                        const buyerBalanceBigInt = BigInt(buyerBalance_str);
-                        const datasetPriceBigInt = BigInt(datasetPrice);
-                        if (buyerBalanceBigInt < datasetPriceBigInt) {
-                            return res.status(400).json({ success: false, message: '잔액이 부족합니다. (현재 잔액: ' + buyerBalance_str + ', 필요 금액: ' + datasetPrice + ')' });
-                        }
-                        web3.eth.getAccounts()
-                            .then(accounts => {
-                                if (!accounts || accounts.length === 0) {
-                                    console.error('[Purchase SMC] 이체 오류: 사용 가능한 Ethereum 계정이 없습니다.');
-                                    return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: Ethereum 계정 없음.' });
-                                }
-                                const fromAccount = accounts[0];
-                                console.log('[Purchase SMC] Attempting to transfer ' + datasetPrice + ' from ' + buyerLoginId + ' (payer: ' + fromAccount + ') to ' + sellerLoginId);
-                                return contractInstance.methods.transBal(buyerLoginId, sellerLoginId, datasetPrice.toString())
+
+                const currentGasPrice = await web3.eth.getGasPrice();
+                console.log(`[BC_PURCHASE] Current gas price: ${currentGasPrice}`);
+
+                const receipt = await contractInstance.methods.transferToServer(userCid, datasetPrice.toString())
                                     .send({ 
-                                        from: fromAccount, 
-                                        gas: '1000000', 
-                                        gasPrice: web3.utils.toWei('10', 'gwei')
-                                    });
-                            })
-                            .then(txReceipt => {
-                                console.log('[Purchase SMC] 이체 성공: TxHash ' + txReceipt.transactionHash);
-                                db.query('INSERT INTO purchase (dataset_id, cid, date, price, payYN, transaction_hash) VALUES (?, ?, NOW(), ?, \'Y\', ?)',
-                                    [dataset_id, buyerCid, datasetPrice, txReceipt.transactionHash],
-                                    (err, insertResult) => {
-                                        if (err) {
-                                            console.error('[Purchase DBError] 구매 정보 저장: ', err);
-                                            return res.status(500).json({ success: false, message: '구매 정보 저장 실패. TxHash: ' + txReceipt.transactionHash + '. 관리자에게 문의하세요.' });
-                                        }
-                                        console.log('[Purchase] Purchase record created for dataset_id: ' + dataset_id + ', cid: ' + buyerCid);
-                                        return res.json({ 
+                        from: deployerAccountAddress, // 서버의 배포자 주소로 변경
+                        gas: '200000', 
+                        gasPrice: currentGasPrice
+                    });
+                
+                console.log(`[BC_PURCHASE] GachonCoin transfer successful. Tx Hash: ${receipt.transactionHash}`);
+
+                // 3. DB에 구매 내역 기록
+                db.query('INSERT INTO purchase (dataset_id, cid, price, payYN, transaction_hash, date) VALUES (?, ?, ?, ?, ?, NOW())', 
+                    [dataset_id, userCid, datasetPrice, 'Y', receipt.transactionHash],
+                    (dbErr, dbResults) => {
+                        if (dbErr) {
+                            console.error('DB Error on inserting purchase record:', dbErr);
+                            return res.status(200).json({ 
+                                success: true, 
+                                message: '코인 전송은 성공했으나, 구매 내역 기록 중 DB 오류가 발생했습니다. 관리자에게 문의하세요.',
+                                transactionHash: receipt.transactionHash,
+                                warning_db_error: dbErr.message
+                            });
+                        }
+                        console.log(`Purchase record saved to DB for user cid ${userCid}, dataset ${dataset_id}`);
+                        res.status(200).json({
                                             success: true, 
-                                            message: "'" + datasetName + "' 데이터셋 구매가 완료되었습니다.",
-                                            transactionHash: txReceipt.transactionHash 
+                            message: `데이터셋 '${datasetName}' 구매 및 코인 전송이 성공적으로 완료되었습니다.`,
+                            datasetId: dataset_id,
+                            datasetName: datasetName,
+                            pricePaid: datasetPrice,
+                            transactionHash: receipt.transactionHash
                                         });
                                     }
                                 );
-                            })
-                            .catch(smcError => { 
-                                console.error('[Purchase SMC] 이체 또는 계정 조회 오류:', smcError);
-                                return res.status(500).json({ success: false, message: '스마트 컨트랙트 처리 실패: ' + smcError.message });
-                            });
-                    })
-                    .catch(smcError => { 
-                        console.error('[Purchase SMC] 잔액 확인 오류 for ' + buyerLoginId + ':', smcError);
-                        return res.status(500).json({ success: false, message: '스마트 컨트랙트 오류: 사용자 잔액 확인 실패 (' + smcError.message + ')' });
-                    });
-            });
+            } catch (contractError) {
+                console.error('[BC_PURCHASE] 스마트 계약 GachonCoin 전송 실패:', contractError);
+                let friendlyMessage = '스마트 계약과의 통신 중 오류가 발생하여 구매를 완료할 수 없었습니다.';
+                if (contractError.message && contractError.message.includes('insufficient funds')) {
+                    friendlyMessage = '지갑에 가스(ETH)가 부족하거나, 지정된 가스 한도가 너무 낮습니다.';
+                } else if (contractError.message && contractError.message.includes('revert')) {
+                    friendlyMessage = '계약 실행이 실패했습니다. (예: 잔액 부족, 조건 미충족 등)';
+                }
+                return res.status(500).json({ 
+                    success: false, 
+                    message: friendlyMessage,
+                    error_details: contractError.message 
+                });
+            }
         });
     },
 
@@ -762,59 +748,139 @@ module.exports = {
     },
 
     // 데이터셋 다운로드 (콜백 스타일로 변경)
-    download_dataset: (req, res) => {
-        console.log('label.download_dataset');
-        const { dataset_id } = req.params;
-        const userCid = req.session.cid;
-        const loginid = req.session.loginid;
+    download_dataset_package: async (req, res) => {
+        console.log('[LABEL_DOWNLOAD_PACKAGE] Initiating package download.');
+        const { datasetid } = req.params;
+        const userCid = req.session.userDbId; // 세션에서 사용자 CID 가져오기 (login_process에서 설정한 userDbId 사용)
 
-        if (!loginid) {
+        if (!req.session.is_logined || !userCid) {
             return res.status(401).json({ success: false, message: '로그인이 필요합니다.' });
         }
-        if (!dataset_id) {
+        if (!datasetid) {
             return res.status(400).json({ success: false, message: '데이터셋 ID가 필요합니다.' });
         }
-        if (!db || typeof db.query !== 'function') {
-            console.error('Database module is not available for download_dataset.');
-            return res.status(500).json({ success: false, message: '서버 내부 오류: DB 모듈 사용 불가.' });
+
+        const minioClient = req.app.get('minioClient');
+        const minioBucketName = req.app.get('minioBucketName') || 'uploads'; // main.js에서 설정한 버킷 이름 가져오기
+
+        if (!minioClient) {
+            console.error('[LABEL_DOWNLOAD_PACKAGE] MinIO client not found in app settings.');
+            return res.status(500).json({ success: false, message: '서버 설정 오류 (MinIO 클라이언트 누락)' });
         }
 
-        db.query('SELECT COUNT(*) AS count FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'', [dataset_id, userCid], (err, purchaseResults) => {
-            if (err) {
-                console.error('[Download DBError] 구매 이력 확인: ', err);
-                return res.status(500).json({ success: false, message: '구매 이력 확인 중 DB 오류: ' + err.message });
+        db.query('SELECT COUNT(*) AS count FROM purchase WHERE dataset_id = ? AND cid = ? AND payYN = \'Y\'', [datasetid, userCid], (purchaseErr, purchaseResults) => {
+            if (purchaseErr) {
+                console.error('[LABEL_DOWNLOAD_PACKAGE] DB Error checking purchase status:', purchaseErr);
+                return res.status(500).json({ success: false, message: '구매 이력 확인 중 DB 오류가 발생했습니다.' });
             }
             if (!purchaseResults || purchaseResults.length === 0 || purchaseResults[0].count === 0) {
-                return res.status(403).json({ success: false, message: '이 데이터셋을 구매하지 않았거나 구매 기록을 찾을 수 없습니다. 다운로드할 수 없습니다.' });
+                return res.status(403).json({ success: false, message: '이 데이터셋을 구매하지 않았습니다. 다운로드할 수 없습니다.' });
             }
-            db.query('SELECT name FROM dataset WHERE dataset_id = ?', [dataset_id], (err, datasetDetailsResults) => {
-                if (err) {
-                    console.error('[Download DBError] 데이터셋 이름 조회: ', err);
-                    return res.status(500).json({ success: false, message: '데이터셋 이름 조회 중 DB 오류: ' + err.message });
-                }
-                if (datasetDetailsResults.length === 0) {
-                    return res.status(404).json({ success: false, message: '데이터셋을 찾을 수 없습니다.' });
+
+            db.query('SELECT name FROM dataset WHERE dataset_id = ?', [datasetid], (datasetErr, datasetDetailsResults) => {
+                if (datasetErr || datasetDetailsResults.length === 0) {
+                    console.error('[LABEL_DOWNLOAD_PACKAGE] DB Error fetching dataset name:', datasetErr);
+                    return res.status(datasetErr ? 500 : 404).json({ success: false, message: datasetErr ? '데이터셋 정보 조회 중 DB 오류.' : '데이터셋을 찾을 수 없습니다.' });
                 }
                 const datasetName = datasetDetailsResults[0].name || 'dataset';
-                db.query('SELECT source, finalOption FROM label WHERE dataset_id = ? AND finalOption IS NOT NULL', [dataset_id], (err, labelsResults) => {
-                    if (err) {
-                        console.error('[Download DBError] 라벨 정보 조회: ', err);
-                        return res.status(500).json({ success: false, message: '라벨 정보 조회 중 DB 오류: ' + err.message });
+                const archiveFileName = `${datasetName.replace(/\s+/g, '_')}_${datasetid}_package.zip`;
+
+                db.query('SELECT source, finalOption FROM label WHERE dataset_id = ? AND finalOption IS NOT NULL AND source IS NOT NULL AND source != \'\'',
+                    [datasetid], async (labelErr, labelsResults) => {
+                    if (labelErr) {
+                        console.error('[LABEL_DOWNLOAD_PACKAGE] DB Error fetching label info:', labelErr);
+                        return res.status(500).json({ success: false, message: '라벨 정보 조회 중 DB 오류가 발생했습니다.' });
                     }
                     if (labelsResults.length === 0) {
-                        return res.status(404).json({ success: false, message: '다운로드할 라벨 데이터가 없습니다 (아직 확정된 라벨이 없거나 데이터셋이 비어있습니다).' });
+                        return res.status(404).json({ success: false, message: '다운로드할 확정된 라벨 데이터가 없습니다 (이미지 또는 최종 라벨 누락).' });
                     }
+
                     const jsonData = {
-                        dataset_id: parseInt(dataset_id),
+                        dataset_id: parseInt(datasetid),
                         dataset_name: datasetName,
                         labels: labelsResults.map(label => ({
-                            source: label.source,
-                            final_option: label.finalOption
+                            image_filename_in_zip: label.source, // MinIO 객체 이름이 ZIP 내 images 폴더 하위의 파일명이 됨
+                            original_minio_object_name: label.source,
+                            final_label: label.finalOption
                         }))
                     };
-                    const fileName = `${datasetName.replace(/\s+/g, '_')}_${dataset_id}.json`;
-                    res.setHeader('X-Filename', encodeURIComponent(fileName));
-                    return res.status(200).json({ success: true, data: jsonData, fileName: fileName });
+
+                    res.setHeader('Content-Type', 'application/zip');
+                    res.setHeader('Content-Disposition', `attachment; filename="${archiveFileName}"`); // 파일명에 큰따옴표 추가 (공백 등 처리)
+                    
+                    const archive = archiver('zip', { zlib: { level: 9 } });
+                    archive.on('warning', (warnErr) => {
+                        console.warn('[ARCHIVER_WARNING]', warnErr);
+                        if (!res.headersSent) {
+                           // 안전하게 헤더 전송 전이면 오류 응답 시도
+                           // res.status(500).json({ success: false, message: 'ZIP 아카이브 생성 중 경고 발생: ' + warnErr.message });
+                        } else if (warnErr.code !== 'ENOENT') { // ENOENT는 파일 못찾는 경우로, 아래에서 개별 처리 가능성
+                           // 이미 헤더가 전송된 경우, 스트림을 종료하려고 시도할 수 있지만 안정적이지 않을 수 있음
+                           // archive.abort(); 
+                        }
+                    });
+                    archive.on('error', (archiveErr) => {
+                        console.error('[ARCHIVER_ERROR] ZIP Archive creation error:', archiveErr);
+                        if (!res.headersSent) {
+                            res.status(500).json({ success: false, message: 'ZIP 아카이브 생성 중 심각한 오류 발생: ' + archiveErr.message });
+                        } else {
+                            // 이미 응답이 시작된 경우, 에러를 로깅하고 연결을 종료
+                            console.error('Headers already sent, cannot send error status for archiver error. Ending response.');
+                            res.end();
+                        }
+                    });
+                    archive.pipe(res);
+
+                    archive.append(JSON.stringify(jsonData, null, 2), { name: 'labels_data.json' });
+
+                    const imagePromises = labelsResults.map(label => {
+                        return new Promise((resolve, reject) => {
+                            const minioObjectName = label.source;
+                            if (!minioObjectName) {
+                                console.warn(`[LABEL_DOWNLOAD_PACKAGE] Skipping label with empty source for dataset ${datasetid}`);
+                                return resolve(); // 소스 정보 없으면 건너뜀 (이미 위에서 필터링했지만, 안전장치)
+                            }
+                            console.log(`[LABEL_DOWNLOAD_PACKAGE] Attempting to stream from MinIO: ${minioBucketName}/${minioObjectName}`);
+                            minioClient.getObject(minioBucketName, minioObjectName, (streamErr, dataStream) => {
+                                if (streamErr) {
+                                    console.error(`[LABEL_DOWNLOAD_PACKAGE] MinIO getObject error for ${minioBucketName}/${minioObjectName}:`, streamErr);
+                                    // 특정 파일 오류 시 전체 중단 대신 경고만 남기고 계속 진행 (resolve로 처리)
+                                    // 이렇게 하면 일부 이미지가 누락된 ZIP 파일이 생성될 수 있음. 정책에 따라 reject(streamErr)로 변경 가능.
+                                    return resolve({ objectName: minioObjectName, status: 'failed', error: streamErr.message });
+                                }
+                                archive.append(dataStream, { name: `images/${minioObjectName}` });
+                                
+                                dataStream.on('end', () => {
+                                    console.log(`[LABEL_DOWNLOAD_PACKAGE] Finished streaming ${minioObjectName} to ZIP.`);
+                                    resolve({ objectName: minioObjectName, status: 'success' });
+                                });
+                                dataStream.on('error', (dsErr) => {
+                                    console.error(`[LABEL_DOWNLOAD_PACKAGE] Error streaming ${minioObjectName} from MinIO to ZIP:`, dsErr);
+                                    resolve({ objectName: minioObjectName, status: 'failed', error: dsErr.message }); // 스트림 오류도 resolve로 넘겨 전체 중단 방지
+                                });
+                            });
+                        });
+                    });
+
+                    try {
+                        const results = await Promise.all(imagePromises);
+                        const failedImages = results.filter(r => r && r.status === 'failed');
+                        if (failedImages.length > 0) {
+                            console.warn(`[LABEL_DOWNLOAD_PACKAGE] Some images failed to stream from MinIO:`, failedImages);
+                            // 실패한 이미지가 있어도 ZIP 파일은 생성될 수 있도록 함. 필요시 여기서 오류 처리.
+                        }
+                        console.log('[LABEL_DOWNLOAD_PACKAGE] All image streaming attempts finished. Finalizing archive.');
+                        await archive.finalize();
+                        console.log(`[LABEL_DOWNLOAD_PACKAGE] Archive ${archiveFileName} finalized and sent.`);
+                    } catch (processError) {
+                        console.error('[LABEL_DOWNLOAD_PACKAGE] Error during image processing or ZIP finalization:', processError);
+                        if (!res.headersSent) {
+                            res.status(500).json({ success: false, message: processError.message || 'ZIP 파일 최종 처리 중 오류 발생' });
+                        } else {
+                            console.error('Headers already sent, cannot send error status for finalization error. Ending response.');
+                            res.end();
+                        }
+                    }
                 });
             });
         });

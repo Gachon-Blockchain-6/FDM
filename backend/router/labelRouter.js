@@ -45,12 +45,17 @@ router.get('/datasets',(req, res) => {
 
 // 사용자의 구매 이력 조회
 router.get('/getPurchases', (req, res) => {
-    label.get_purchases(req, res);
+    label.getPurchases(req, res);
 });
 
-// 데이터셋 다운로드
-router.get('/download/:dataset_id', (req, res) => {
-    label.download_dataset(req, res);
+// 데이터셋의 투표 내역과 이미지 소스 조회
+router.get('/dataset/:datasetid/votes-and-images', (req, res) => {
+    label.get_dataset_votes_and_images(req, res);
+});
+
+// 데이터셋 패키지 다운로드 (JSON + 이미지 ZIP) 
+router.get('/download-package/:datasetid', (req, res) => {
+    label.download_dataset_package(req, res);
 });
 
 module.exports = router;
