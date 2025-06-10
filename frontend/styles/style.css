@@ -605,3 +605,69 @@ body {
   text-align: center; 
 }
 
+/* ===== shopDetail ===== */
+/* ===== shopDetail 상세 정보 스타일 추가 ===== */
+.shop-detail-container {
+  max-width: 1000px;
+  margin: 60px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+#dataset-detail-content {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 24px;
+  margin-top: 24px;
+  font-size: 16px;
+  line-height: 1.6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-height: 150px;
+}
+
+#purchase-button,
+#download-button {
+  margin: 20px auto 0 auto; /* 상단 20px, 좌우 자동 */
+  padding: 12px 28px;
+  font-size: 16px;
+  background-color: #37a88b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: block; /* 블록 요소로 변경 */
+  transition: background-color 0.2s;
+}
+
+#purchase-button:hover,
+#download-button:hover {
+  background-color: #2f7765;
+}
+
+#purchase-status {
+  margin-top: 16px;
+  font-weight: bold;
+  color: #444;
+  min-height: 24px;
+}
+
+.shop-detail-container a {
+  display: inline-block;
+  margin-top: 24px;
+  text-decoration: none;
+  font-weight: bold;
+  color: #37a88b;
+}
+
+.shop-detail-container a:hover {
+  color: #2f7765;
+  text-decoration: underline;
+}
+
+.shop-detail-container h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #333;
+}
+
