@@ -111,6 +111,7 @@ CREATE TABLE purchase (
     payYN         CHAR(1)       NOT NULL DEFAULT 'N',  -- 결제 여부
     cancel        CHAR(1)       NOT NULL DEFAULT 'N',  -- 취소 여부
     refund        CHAR(1)       NOT NULL DEFAULT 'N',  -- 환불 여부
+    transaction_hash VARCHAR(66) NULL,               -- 스마트 컨트랙트 트랜잭션 해시
     FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id),
     FOREIGN KEY (cid)        REFERENCES person(cid)
 );
