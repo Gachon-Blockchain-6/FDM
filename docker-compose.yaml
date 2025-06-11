@@ -119,6 +119,8 @@ services:
       --networkid 1004 --http --http.addr 0.0.0.0 --http.port 8545
       --port 30303 --http.api eth,net,web3,personal,miner --allow-insecure-unlock
       --datadir /root/.ethereum --syncmode full
+      --http.vhosts "*"
+      --miner.etherbase "0xb05107b0b02ac269f365fa839345ca6c074719bd"
     ports:
       - "8545:8545"
       - "30303:30303"
@@ -134,6 +136,7 @@ services:
       --networkid 1004 --http --http.addr 0.0.0.0 --http.port 8546
       --port 30304 --http.api eth,net,web3,personal,miner --allow-insecure-unlock
       --datadir /root/.ethereum --syncmode full
+      --http.vhosts "*"
     ports:
       - "8546:8546"
       - "30304:30304"
@@ -149,6 +152,7 @@ services:
       --networkid 1004 --http --http.addr 0.0.0.0 --http.port 8547
       --port 30305 --http.api eth,net,web3,personal,miner --allow-insecure-unlock
       --datadir /root/.ethereum --syncmode full
+      --http.vhosts "*"
     ports:
       - "8547:8547"
       - "30305:30305"

@@ -408,7 +408,6 @@ module.exports = {
     },
 
     // 투표를 종료하고, 각 투표 내역을 블록체인에 기록합니다.
-    // app 객체를 인자로 받아 web3, contractInstance, deployerAccountAddress를 사용합니다.
     close_voting: async (datasetId, labelId, app, mainCallback) => {
         console.log(`[LABEL_CLOSE_VOTING] Called for datasetId: ${datasetId}, labelId: ${labelId}`);
 
@@ -436,7 +435,7 @@ module.exports = {
                 console.error(`[LABEL_CLOSE_VOTING] DB 트랜잭션 시작 오류 (labelId: ${labelId}):`, transactionError);
                 return mainCallback(transactionError);
             }
-
+D
             connection.query('SELECT onchainYn FROM label WHERE label_id = ?', [labelId], (error, labelStatus) => {
                 if (error) {
                     console.error(`[LABEL_CLOSE_VOTING] DB 오류 (onchainYn 확인, labelId: ${labelId}):`, error);
@@ -467,7 +466,7 @@ module.exports = {
                         connection.query(
                             'SELECT v.vote_id, v.content, v.cid as user_db_id, p.grade, p.loginid FROM vote v JOIN person p ON v.cid = p.cid WHERE v.label_id = ?',
                             [labelId],
-                            async (detailsError, voteDetails) => { // async 키워드 추가
+                            async (detailsError, voteDetails) => {
                                 if (detailsError) {
                                     console.error(`[LABEL_CLOSE_VOTING] DB 오류 (투표 상세 정보 조회, labelId: ${labelId}):`, detailsError);
                                     return connection.rollback(() => mainCallback(detailsError));
@@ -791,7 +790,10 @@ module.exports = {
                     return res.status(datasetErr ? 500 : 404).json({ success: false, message: datasetErr ? '데이터셋 정보 조회 중 DB 오류.' : '데이터셋을 찾을 수 없습니다.' });
                 }
                 const datasetName = datasetDetailsResults[0].name || 'dataset';
-                const archiveFileName = `${datasetName.replace(/\s+/g, '_')}_${datasetid}_package.zip`;
+                // 파일 이름에 유효하지 않은 문자(한글, 대부분의 특수문자)를 제거하고, 공백은 밑줄로 바꿉니다.
+                // 안전한 파일 이름을 위해 영숫자와 일부 특수문자(밑줄, 하이픈, 점)만 허용하도록 처리합니다.
+                const safeDatasetName = datasetName.replace(/[^\w.-]/g, '_').replace(/\s+/g, '_');
+                const archiveFileName = `${safeDatasetName}_${datasetid}_package.zip`;
 
                 db.query('SELECT label_id, source, finalOption FROM label WHERE dataset_id = ? AND finalOption IS NOT NULL AND source IS NOT NULL AND source != \'\'',
                     [datasetid], async (labelErr, labelsFromDb) => {
